@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="admin/tool/tutor_follow/db" VERSION="20241031" COMMENT="XMLDB file for Moodle admin/tool/tutor_follow"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="tool_tutor_follow" COMMENT="Tabla para guardar la data en json de acuerdo a las instancias requeridas">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="type" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="type"/>
+        <FIELD NAME="instance_id" TYPE="int" LENGTH="20" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="datajson" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="lastupdate" TYPE="int" LENGTH="20" NOTNULL="false" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+    </TABLE>
+  </TABLES>
+</XMLDB>

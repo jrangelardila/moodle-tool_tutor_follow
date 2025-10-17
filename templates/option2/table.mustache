@@ -1,0 +1,47 @@
+<div class="p">
+    <br>
+    {{#str}}lastupdate, tool_tutor_follow{{/str}}:
+    <b class="text-primary font-weight-bold">{{{lastejecution}}}</b>
+</div>
+
+<table class="container mt-3" border="2">
+    <tr class="text-center">
+        <td class="text-white bg-primary font-weight-bold">
+            {{#str}}name, tool_tutor_follow{{/str}}
+        </td>
+        <td class="text-white bg-primary font-weight-bold">
+            {{#str}}idnumber, tool_tutor_follow{{/str}}
+        </td>
+        <td class="text-white bg-primary font-weight-bold">
+            {{#str}}email, tool_tutor_follow{{/str}}
+        </td>
+        <td class="text-white bg-primary font-weight-bold">
+            {{#str}}modules, tool_tutor_follow{{/str}}
+        </td>
+        <td class="text-white bg-primary font-weight-bold">
+            {{#str}}lastconnection, tool_tutor_follow{{/str}}
+        </td>
+        <td class="text-white bg-primary font-weight-bold">
+            {{#str}}students, tool_tutor_follow{{/str}}
+        </td>
+    </tr>
+    {{#users}}
+        <tr>
+            <td class="text-primary font-weight-bold">
+                <a href="{{{perfil_url}}}" target="_blank">
+                    <img src="{{{picture}}}" alt="" class="rounded-circle text-left m-1" width="45">
+                    <label>{{firstname}} {{lastname}}</label>
+                </a>
+            </td>
+            <td class="text-center">{{idnumber}}</td>
+            <td class="text-center">{{email}}</td>
+            <td class="text-center">{{numcursos}}</td>
+            <td>{{lastacces_text}}</td>
+            <td>
+                <div class="btn btn-secondary more-info" id="{{id}}" idnumber="{{idnumber}}">
+                    {{#str}}studentsdistribution, tool_tutor_follow{{/str}}
+                </div>
+            </td>
+        </tr>
+    {{/users}}
+</table>

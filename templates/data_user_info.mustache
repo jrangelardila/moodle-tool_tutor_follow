@@ -1,0 +1,39 @@
+<table class="table">
+    <thead>
+    <tr class="bg-primary text-white text-center">
+        <td><b>{{#str}}teacher, tool_tutor_follow{{/str}}</b></td>
+        <td><b>{{#str}}idnumber, tool_tutor_follow{{/str}}</b></td>
+        <td><b>{{#str}}email, tool_tutor_follow{{/str}}</b></td>
+        <td colspan="2"><b>{{#str}}lastaccess, tool_tutor_follow{{/str}}</b></td>
+        <td class="ml-5 pl-5"><b>{{#str}}course, tool_tutor_follow{{/str}}</b></td>
+        <td colspan="2"><b>{{#str}}category, tool_tutor_follow{{/str}}</b></td>
+        <td><b>{{#str}}dedicationtime, tool_tutor_follow{{/str}}</b></td>
+        <td><b>{{#str}}showdetails, tool_tutor_follow{{/str}}</b></td>
+    </tr>
+    </thead>
+    <tbody>
+    {{#users}}
+        {{#cursos}}
+            {{#category_url}}
+                <tr>
+                    <td><a href="{{profile_url}}" target="_blank">{{name}}</a></td>
+                    <td>{{idnumber}}</td>
+                    <td>{{email}}</td>
+                    <td colspan="2">
+                        {{#userdate}} {{lastaccess}}, {{#str}}strftimedatetime, core_langconfig{{/str}} {{/userdate}}
+                    </td>
+                    <td class="ml-5 pl-5"><a href="{{course_url}}" target="_blank">{{course_name}}</a></td>
+                    <td colspan="2"><a href="{{category_url}}" target="_blank">{{category_name}}</a></td>
+                    <td>{{{dedication_time}}}</td>
+                    <td>
+                        <a class="btn btn-primary" href="{{course_details}}">
+                            {{#str}}showdetails, tool_tutor_follow{{/str}}
+                        </a>
+                    </td>
+                </tr>
+            {{/category_url}}
+        {{/cursos}}
+    {{/users}}
+    </tbody>
+</table>
+
