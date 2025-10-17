@@ -99,5 +99,5 @@ $string['studentsdistribution'] = 'Students distribution';
 $string['dedicated_info'] = 'Dedicated <b>{$a->time}</b>, accessed the module <b>{$a->count} times</b>';
 $string['noaccess'] = 'Has not accessed yet';
 $string['never'] = 'Never';
-
+$string['course'] = 'Course';
 
