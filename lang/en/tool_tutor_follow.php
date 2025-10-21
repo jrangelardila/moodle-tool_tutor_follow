@@ -100,4 +100,6 @@ $string['dedicated_info'] = 'Dedicated <b>{$a->time}</b>, accessed the module <b
 $string['noaccess'] = 'Has not accessed yet';
 $string['never'] = 'Never';
 $string['course'] = 'Course';
+$string['get_data_course_for_user_desc'] = 'Fetch the data of the user’s enrolled courses.';
+$string['tutor_follow:view'] = 'View tutor follow data';
 

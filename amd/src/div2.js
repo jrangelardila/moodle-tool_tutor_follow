@@ -10,12 +10,12 @@ define([
     return {
         init: function () {
             $(".more-info").click(async function (event) {
-                const number = $(event.currentTarget).attr("idnumber");
+                const number = event.currentTarget.id;
 
                 const options = {
                     methodname: 'tool_tutor_follow_get_data_course_for_user',
                     args: {
-                        idnumber: number
+                        id: number
                     },
                 };
 

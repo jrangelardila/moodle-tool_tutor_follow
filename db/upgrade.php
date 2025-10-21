@@ -30,6 +30,7 @@ defined('MOODLE_INTERNAL') || die();
  *
  * @param int $oldversion
  * @return bool
+ * @throws ddl_exception
  */
 function xmldb_tool_tutor_follow_upgrade($oldversion)
 {

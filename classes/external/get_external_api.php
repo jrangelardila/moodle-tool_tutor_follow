@@ -28,33 +28,43 @@ namespace tool_tutor_follow\external;
 require_once(__DIR__ . "/../../lib.php");
 
 use core_external\external_function_parameters;
-use core_external\external_multiple_structure;
-use core_external\external_single_structure;
 use core_external\external_value;
 use core_external\external_api;
 
-use moodle_url;
 use stdClass;
+
 
 class get_external_api extends external_api
 {
 
+    /**
+     * Struct of params
+     *
+     * @return external_function_parameters
+     */
     public static function get_data_courses_parameters(): external_function_parameters
     {
         return new external_function_parameters(
             [
-                'idnumber' => new external_value(PARAM_TEXT, 'ID del elemento', VALUE_OPTIONAL)
+                'id' => new external_value(PARAM_TEXT, 'userid', VALUE_OPTIONAL)
             ]
         );
     }
 
-    public static function get_data_courses($idnumber)
+    /**
+     * Filter data user
+     *
+     * @param $id
+     * @return false|string
+     * @throws \dml_exception
+     */
+    public static function get_data_courses($id)
     {
         $data = json_decode(tool_tutor_follow_get_data('json_user_data', 'data_user'), true);
 
         $obj = new stdClass();
         foreach ($data['users'] as $user) {
-            if ($user['idnumber'] == $idnumber) {
+            if ($user['id'] == $id) {
                 $obj = $user;
                 break;
             }
@@ -64,9 +74,14 @@ class get_external_api extends external_api
         return json_encode($obj);
     }
 
+    /**
+     * Data returns
+     *
+     * @return external_value
+     */
     public static function get_data_courses_returns(): external_value
     {
-        return new external_value(PARAM_RAW, 'Cualquier tipo de datos en formato JSON o estructura de objeto');
+        return new external_value(PARAM_RAW, 'Data user');
     }
 
 }
