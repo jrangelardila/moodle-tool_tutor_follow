@@ -45,7 +45,7 @@ tool_tutor_follow_print_bar($OUTPUT, 1, [
 $courseid = optional_param("courseid", "", PARAM_INT);
 
 if (empty($courseid)) {
-    throw new moodle_exception("Es necesario un courseid");
+    throw new moodle_exception('missingcourseid', 'tool_tutor_follow');
 }
 
 

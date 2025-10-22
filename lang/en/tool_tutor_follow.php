@@ -102,4 +102,7 @@ $string['never'] = 'Never';
 $string['course'] = 'Course';
 $string['get_data_course_for_user_desc'] = 'Fetch the data of the user’s enrolled courses.';
 $string['tutor_follow:view'] = 'View tutor follow data';
+$string['missingcourseid'] = 'A course ID is required';
+$string['noclosingdate'] = 'No closing date';
+$string['gradecount'] = 'Number of grades';
 

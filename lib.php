@@ -585,6 +585,8 @@ function tool_tutor_follow_details_table_course($courseid, $endtime)
     echo "<hr> ";
     echo $OUTPUT->render($chart);
 
+    $info->number_grades_string = get_string('gradecount', 'tool_tutor_follow');
+
     echo "</div>";
     echo $OUTPUT->render_from_template('tool_tutor_follow/details/course', $info);
 }

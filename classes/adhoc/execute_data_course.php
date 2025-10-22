@@ -174,7 +174,7 @@ AND gi.itemmodule = 'forum' AND g.finalgrade!=0", ['forumid' => $forum->id]);
         $forum->json_stadistics_grades = json_encode($forum->stadistics_grades);
 
         if (!$forum->cutoffdate) {
-            $forum->message_cutoffdate = "Sin fecha de cierre";
+            $forum->message_cutoffdate = get_string('noclosingdate', 'tool_tutor_follow');
         }
         return $forum;
     }
@@ -267,10 +267,10 @@ AND gi.itemmodule = 'forum' AND g.finalgrade!=0", ['forumid' => $forum->id]);
         $assign->json_stadistics_grades = json_encode($assign->stadistics_grades);
 
         if (!$assign->cutoffdate) {
-            $assign->message_cutoffdate = "Sin fecha de cierre";
+            $assign->message_cutoffdate = get_string('noclosingdate', 'tool_tutor_follow');
         }
         if (!$assign->cutoffdate) {
-            $assign->message_allowsubmissionsfromdate = "Sin fecha de cierre";
+            $assign->message_allowsubmissionsfromdate = get_string('noclosingdate', 'tool_tutor_follow');
         }
 
         return $assign;
