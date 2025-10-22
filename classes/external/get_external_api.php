@@ -27,6 +27,7 @@ namespace tool_tutor_follow\external;
 
 require_once(__DIR__ . "/../../lib.php");
 
+use context_system;
 use core_external\external_function_parameters;
 use core_external\external_value;
 use core_external\external_api;
@@ -60,19 +61,35 @@ class get_external_api extends external_api
      */
     public static function get_data_courses($id)
     {
+
+        $params = self::validate_parameters(
+            self::get_data_courses_parameters(),
+            ['id' => $id]
+        );
+
+        $context = context_system::instance();
+
+        self::validate_context($context);
+
+        require_capability('tool/tutor_follow:view', $context);
+
         $data = json_decode(tool_tutor_follow_get_data('json_user_data', 'data_user'), true);
+
+        if (empty($data['users'])) {
+            return json_encode([]);
+        }
 
         $obj = new stdClass();
         foreach ($data['users'] as $user) {
-            if ($user['id'] == $id) {
+            if ($user['id'] == $params['id']) {
                 $obj = $user;
                 break;
             }
         }
 
-
         return json_encode($obj);
     }
+
 
     /**
      * Data returns
