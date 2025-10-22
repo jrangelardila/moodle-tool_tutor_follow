@@ -70,45 +70,45 @@ class data_user_tutor extends \core\task\scheduled_task
         $category = json_decode(get_config('tool_tutor_follow', 'categories'));
         $roles = json_decode(get_config('tool_tutor_follow', 'roles'));
 
-        $category_sql = 'c.category IN (' . implode(',', array_map('intval', $category)) . ')';
-
-        $roles_sql = 'r.shortname IN (' . implode(',', array_map(function ($role) {
-                return "'" . trim($role) . "'";
-            }, $roles)) . ')';
-
+        list($category_sql, $category_params) = $DB->get_in_or_equal($category, SQL_PARAMS_NAMED, 'cat');
+        list($roles_sql, $roles_params) = $DB->get_in_or_equal($roles, SQL_PARAMS_NAMED, 'role');
         $sql = "
-    SELECT DISTINCT u.*
-    FROM {user} u
-    JOIN {role_assignments} ra ON ra.userid = u.id
-    JOIN {context} ctx ON ctx.id = ra.contextid
-    JOIN {role} r ON r.id = ra.roleid
-    JOIN {course} c ON c.id = ctx.instanceid
-    JOIN {enrol} e ON e.courseid = c.id
-    JOIN {user_enrolments} ue ON ue.enrolid = e.id AND ue.userid = u.id
-    WHERE ue.status = 0
-      AND $category_sql
-      AND $roles_sql";
+       SELECT DISTINCT u.*
+      FROM {user} u
+      JOIN {role_assignments} ra ON ra.userid = u.id
+      JOIN {context} ctx ON ctx.id = ra.contextid
+      JOIN {role} r ON r.id = ra.roleid
+      JOIN {course} c ON c.id = ctx.instanceid
+      JOIN {enrol} e ON e.courseid = c.id
+      JOIN {user_enrolments} ue ON ue.enrolid = e.id AND ue.userid = u.id
+     WHERE ue.status = 0
+       AND c.category $category_sql
+       AND r.shortname $roles_sql";
+        $params = array_merge($category_params, $roles_params);
 
-        $users = $DB->get_records_sql($sql);
+        $users = $DB->get_records_sql($sql, $params);
+
         $info["users"] = [];
         mtrace(get_string('count_users', 'tool_tutor_follow') . sizeof($users));
         foreach ($users as $user) {
             mtrace(get_string('updated_user', 'tool_tutor_follow') . $user->firstname . " " . $user->lastname);
 
             $sql = "
-    SELECT  c.*
-    FROM {user} u
-    JOIN {role_assignments} ra ON ra.userid = u.id
-    JOIN {context} ctx ON ctx.id = ra.contextid
-    JOIN {role} r ON r.id = ra.roleid
-    JOIN {course} c ON c.id = ctx.instanceid
-    JOIN {enrol} e ON e.courseid = c.id
-    JOIN {user_enrolments} ue ON ue.enrolid = e.id AND ue.userid = u.id
-    WHERE ue.status = 0
-        AND u.id = '$user->id'
-      AND $category_sql
-      AND $roles_sql";
-            $cursos = $DB->get_records_sql($sql);
+    SELECT DISTINCT c.*
+      FROM {user} u
+      JOIN {role_assignments} ra ON ra.userid = u.id
+      JOIN {context} ctx ON ctx.id = ra.contextid
+      JOIN {role} r ON r.id = ra.roleid
+      JOIN {course} c ON c.id = ctx.instanceid
+      JOIN {enrol} e ON e.courseid = c.id
+      JOIN {user_enrolments} ue ON ue.enrolid = e.id AND ue.userid = u.id
+     WHERE ue.status = 0
+       AND u.id = :userid
+       AND c.category $category_sql
+       AND r.shortname $roles_sql";
+            $params = array_merge(['userid' => $user->id], $category_params, $roles_params);
+            $cursos = $DB->get_records_sql($sql, $params);
+
             //count of courses in enrolled
             $user->numcursos = sizeof($cursos);
             $user->cursos = [];

@@ -126,8 +126,6 @@ class execute_data_course extends adhoc_task
 
             $DB->insert_record('tool_tutor_follow', $record);
         }
-        mtrace("Guardando record...");
-
     }
 
     /**
