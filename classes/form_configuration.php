@@ -58,7 +58,7 @@ class form_configuration extends \moodleform
             '</h3>'
         );
 
-        $roles = role_get_names();
+        $roles = get_all_roles();
         $roleOptions = [];
         foreach ($roles as $role) {
             if (stripos($role->shortname, 'teacher') !== false) {

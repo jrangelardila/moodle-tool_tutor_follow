@@ -29,6 +29,7 @@ use moodle_page;
 use moodle_url;
 use stdClass;
 use tool_tutor_follow\adhoc\execute_data_course;
+use tool_tutor_follow\adhoc\execute_data_user;
 use user_picture;
 
 require_once(__DIR__ . "/../../lib.php");
@@ -123,7 +124,7 @@ class data_user_tutor extends \core\task\scheduled_task
                 $course->students = $num_students;
 
                 //Created adhoc
-                self::created_adhoc_tas($course);
+                self::created_adhoc_task($course);
 
                 $user->cursos[] = $course;
 
@@ -204,7 +205,7 @@ class data_user_tutor extends \core\task\scheduled_task
      * @param stdClass $customdata
      * @return void
      */
-    static function created_adhoc_tas(stdClass $customdata)
+    static function created_adhoc_task(stdClass $customdata)
     {
         $task = new execute_data_course();
         $task->set_custom_data($customdata);
