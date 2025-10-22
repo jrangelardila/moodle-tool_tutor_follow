@@ -293,11 +293,15 @@ function tool_tutor_follow_get_lastime_execution_task($taskname)
 
     $sql = "SELECT * FROM {task_scheduled} WHERE classname = ?";
     $last_run = $DB->get_record_sql($sql, [$taskname]);
-    if ($last_run) {
-        return userdate($last_run->lastruntime);
-    } else {
+    if (!$last_run) {
         return get_string('notupdated', 'tool_tutor_follow');
     }
+
+    if (empty($last_run->lastruntime)) {
+        return get_string('notupdated', 'tool_tutor_follow');
+    }
+
+    return userdate($last_run->lastruntime);
 }
 
 /**
