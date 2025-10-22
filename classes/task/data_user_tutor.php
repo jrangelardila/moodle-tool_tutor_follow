@@ -72,49 +72,57 @@ class data_user_tutor extends \core\task\scheduled_task
 
         list($category_sql, $category_params) = $DB->get_in_or_equal($category, SQL_PARAMS_NAMED, 'cat');
         list($roles_sql, $roles_params) = $DB->get_in_or_equal($roles, SQL_PARAMS_NAMED, 'role');
-        $sql = "
-       SELECT DISTINCT u.*
-      FROM {user} u
-      JOIN {role_assignments} ra ON ra.userid = u.id
-      JOIN {context} ctx ON ctx.id = ra.contextid
-      JOIN {role} r ON r.id = ra.roleid
-      JOIN {course} c ON c.id = ctx.instanceid
-      JOIN {enrol} e ON e.courseid = c.id
-      JOIN {user_enrolments} ue ON ue.enrolid = e.id AND ue.userid = u.id
-     WHERE ue.status = 0
-       AND c.category $category_sql
-       AND r.shortname $roles_sql";
         $params = array_merge($category_params, $roles_params);
 
-        $users = $DB->get_records_sql($sql, $params);
+        $sql_users = "
+        SELECT DISTINCT u.*
+          FROM {user} u
+          JOIN {role_assignments} ra ON ra.userid = u.id
+          JOIN {context} ctx ON ctx.id = ra.contextid
+          JOIN {role} r ON r.id = ra.roleid
+          JOIN {course} c ON c.id = ctx.instanceid
+          JOIN {enrol} e ON e.courseid = c.id
+          JOIN {user_enrolments} ue ON ue.enrolid = e.id AND ue.userid = u.id
+         WHERE ue.status = 0
+           AND c.category $category_sql
+           AND r.shortname $roles_sql";
+        $users = $DB->get_records_sql($sql_users, $params);
 
-        $info["users"] = [];
-        mtrace(get_string('count_users', 'tool_tutor_follow') . sizeof($users));
+        mtrace(get_string('count_users', 'tool_tutor_follow') . count($users));
+
+        $sql_user_courses = "
+        SELECT DISTINCT u.id AS userid, c.*
+          FROM {user} u
+          JOIN {role_assignments} ra ON ra.userid = u.id
+          JOIN {context} ctx ON ctx.id = ra.contextid
+          JOIN {role} r ON r.id = ra.roleid
+          JOIN {course} c ON c.id = ctx.instanceid
+          JOIN {enrol} e ON e.courseid = c.id
+          JOIN {user_enrolments} ue ON ue.enrolid = e.id AND ue.userid = u.id
+         WHERE ue.status = 0
+           AND c.category $category_sql
+           AND r.shortname $roles_sql";
+
+        $usercourses = $DB->get_records_sql($sql_user_courses, $params);
+
+        $courses_in_user = [];
+        foreach ($usercourses as $record) {
+            $courses_in_user[$record->userid][] = $record;
+        }
+        $info = ['users' => []];
+
         foreach ($users as $user) {
             mtrace(get_string('updated_user', 'tool_tutor_follow') . $user->firstname . " " . $user->lastname);
 
-            $sql = "
-    SELECT DISTINCT c.*
-      FROM {user} u
-      JOIN {role_assignments} ra ON ra.userid = u.id
-      JOIN {context} ctx ON ctx.id = ra.contextid
-      JOIN {role} r ON r.id = ra.roleid
-      JOIN {course} c ON c.id = ctx.instanceid
-      JOIN {enrol} e ON e.courseid = c.id
-      JOIN {user_enrolments} ue ON ue.enrolid = e.id AND ue.userid = u.id
-     WHERE ue.status = 0
-       AND u.id = :userid
-       AND c.category $category_sql
-       AND r.shortname $roles_sql";
-            $params = array_merge(['userid' => $user->id], $category_params, $roles_params);
-            $cursos = $DB->get_records_sql($sql, $params);
+            $cursos = $courses_in_user[$user->id] ?? [];
 
-            //count of courses in enrolled
-            $user->numcursos = sizeof($cursos);
+            $user->numcursos = count($cursos);
             $user->cursos = [];
-            $all_studentes = 0;
+
+            $all_students = 0;
             $activities_for_calification = 0;
             $activities_no_grade = 0;
+
             foreach ($cursos as $course) {
                 $num_students = tool_tutor_follow_get_count_students($course->id);
                 mtrace(get_string('course_student_count', 'tool_tutor_follow', [
@@ -123,10 +131,7 @@ class data_user_tutor extends \core\task\scheduled_task
                 ]));
                 $course->students = $num_students;
 
-                //Created adhoc
                 self::created_adhoc_task($course);
-
-                $user->cursos[] = $course;
 
                 $acts1 = self::activities_for_calification($course->id);
                 $act2 = self::activities_no_grade($course->id);
@@ -134,27 +139,29 @@ class data_user_tutor extends \core\task\scheduled_task
                 $course->activities_to_grade = $acts1;
                 $course->activities_no_grade = $act2;
 
-                $all_studentes += $num_students;
-                $activities_for_calification += sizeof($acts1);
-                $activities_no_grade += sizeof($act2);
+                $all_students += $num_students;
+                $activities_for_calification += count($acts1);
+                $activities_no_grade += count($act2);
+
+                $user->cursos[] = $course;
             }
+
             $user->activities_for_calification = $activities_for_calification;
             $user->activities_no_grade = $activities_no_grade;
-            $user->all_studentes = $all_studentes;
-            //picture
+            $user->all_students = $all_students;
+
             $picture = new user_picture($user);
             $picture->size = 110;
             $page = new moodle_page();
             $user->picture = $picture->get_url($page)->out();
-            $url = new moodle_url("/user/profile.php?id=" . $user->id);
-            $user->perfil_url = $url->out();
+
+            $user->perfil_url = (new moodle_url("/user/profile.php", ['id' => $user->id]))->out();
             $user->lastacces_text = userdate($user->lastaccess);
 
             $info['users'][] = $user;
         }
 
         mtrace(get_string('save_file', 'tool_tutor_follow'));
-
         tool_tutor_follow_save_data_json(json_encode($info), 'json_user_data', 'data_user');
     }
 
