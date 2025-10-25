@@ -407,6 +407,10 @@ function tool_tutor_follow_details_table_course($courseid, $endtime)
         "type" => data_user_tutor::DATA_TYPE['COURSE']
     ]);
 
+    if (!$courseinfo) {
+        return;
+    }
+
     $info = json_decode(base64_decode($courseinfo->datajson));
     if ($endtime) {
         foreach ($info->forums as $forum) {

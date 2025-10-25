@@ -106,4 +106,4 @@ $string['missingcourseid'] = 'A course ID is required';
 $string['noclosingdate'] = 'No closing date';
 $string['gradecount'] = 'Number of grades';
 $string['privacy:metadata'] = 'This plugin does not store any user data';
-
+$string['details'] = 'Details';

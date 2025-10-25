@@ -42,8 +42,8 @@ $PAGE->requires->jquery();
 
 require_capability('tool/tutor_follow:view', context_system::instance());
 
-$PAGE->navbar->add('Dashboard de Docentes', new moodle_url('/admin/tool/tutor_follow/index.php'));
-$PAGE->navbar->add('Detalles');
+$PAGE->navbar->add(get_string('pluginname', 'tool_tutor_follow'), new moodle_url('/admin/tool/tutor_follow/index.php'));
+$PAGE->navbar->add(get_string('details', 'tool_tutor_follow'));
 
 echo $OUTPUT->header();
 
