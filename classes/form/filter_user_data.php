@@ -58,9 +58,13 @@ class filter_user_data extends \moodleform
         $categories_config = json_decode(get_config('tool_tutor_follow', 'categories'));
         $values_categories = [];
         foreach ($categories_config as $category) {
-            $categoria = core_course_category::get($category);
-            $fullpath = $categoria->get_nested_name(false, '/');
-            $values_categories[$category] = $fullpath;
+            try {
+                $categoria = core_course_category::get($category);
+                $fullpath = $categoria->get_nested_name(false, '/');
+                $values_categories[$category] = $fullpath;
+            }catch (\moodle_exception $e){
+
+            }
         }
 
         $mform->addElement('html', '<br><br>');

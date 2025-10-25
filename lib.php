@@ -67,6 +67,10 @@ function tool_tutor_follow_print_bar($OUTPUT, $id, $options)
 function tool_tutor_follow_option1()
 {
     $data = json_decode(tool_tutor_follow_get_data('json_user_data', 'data_user'));
+
+    if (!is_object($data)) {
+        $data = new stdClass();
+    }
     $data->lastejecution = tool_tutor_follow_get_lastime_execution_task('\tool_tutor_follow\task\data_user_tutor');
 
     echo "<p>" . get_string('lastupdate', 'tool_tutor_follow') . ": <b class='text-danger'>" . $data->lastejecution . "</b></p>";
@@ -192,7 +196,11 @@ function tool_tutor_follow_option3()
     global $OUTPUT;
 
     $data = json_decode(tool_tutor_follow_get_data('json_user_data', 'data_user'));
+    if (!is_object($data)) {
+        $data = new stdClass();
+    }
     $data->lastejecution = tool_tutor_follow_get_lastime_execution_task('\tool_tutor_follow\task\data_user_tutor');
+
     echo $OUTPUT->render_from_template('tool_tutor_follow/option2/table', $data);
 
     echo " <br><hr> ";
@@ -293,15 +301,13 @@ function tool_tutor_follow_get_lastime_execution_task($taskname)
 
     $sql = "SELECT * FROM {task_scheduled} WHERE classname = ?";
     $last_run = $DB->get_record_sql($sql, [$taskname]);
-    if (!$last_run) {
-        return get_string('notupdated', 'tool_tutor_follow');
-    }
 
-    if (empty($last_run->lastruntime)) {
-        return get_string('notupdated', 'tool_tutor_follow');
-    }
+    $value = get_string('notupdated', 'tool_tutor_follow');
 
-    return userdate($last_run->lastruntime);
+    if ($last_run->lastruntime) {
+        $value = userdate($last_run->lastruntime);
+    }
+    return $value;
 }
 
 /**

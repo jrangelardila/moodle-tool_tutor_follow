@@ -25,6 +25,7 @@
 
 namespace tool_tutor_follow;
 
+use context_system;
 use core_course_category;
 
 require_once($CFG->libdir . '/formslib.php');
@@ -58,11 +59,11 @@ class form_configuration extends \moodleform
             '</h3>'
         );
 
-        $roles = get_all_roles();
+        $roles = role_get_names(context_system::instance());
         $roleOptions = [];
         foreach ($roles as $role) {
             if (stripos($role->shortname, 'teacher') !== false) {
-                $roleOptions[$role->shortname] = $role->name;
+                $roleOptions[$role->shortname] = $role->name ?: $role->localname;
             }
         }
 
