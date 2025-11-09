@@ -76,7 +76,7 @@ switch ($option) {
         tool_tutor_follow_option3();
         break;
     case 4:
-        $form = new tool_tutor_follow\form_configuration(
+        $form = new \tool_tutor_follow\form\form_configuration(
             action: new moodle_url('/admin/tool/tutor_follow/index.php?i=4')
         );
         if ($form->get_data()) {

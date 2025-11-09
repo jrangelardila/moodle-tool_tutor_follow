@@ -53,6 +53,44 @@ function xmldb_tool_tutor_follow_upgrade($oldversion)
         // Created table
         $dbman->create_table($table);
     }
+    // Define table tool_tutor_follow_report to be created.
+    $table = new xmldb_table('tool_tutor_follow_report');
+    // Conditionally launch create table for tool_tutor_follow_report.
+    if (!$dbman->table_exists($table)) {
+        // Adding fields to table tool_tutor_follow_report.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('status', XMLDB_TYPE_INTEGER, '20', null, null, null, '0');
+        $table->add_field('authorid', XMLDB_TYPE_INTEGER, '20', null, null, null, null);
+        $table->add_field('title', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('description', XMLDB_TYPE_TEXT, null, null, XMLDB_NOTNULL, null, null);
+        $table->add_field('cc_email', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('cco_email', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '20', null, null, null, null);
+        $table->add_field('lasupdated', XMLDB_TYPE_INTEGER, '20', null, null, null, null);
+        // Adding keys to table tool_tutor_follow_report.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        // Created table
+        $dbman->create_table($table);
+    }
+    // Define table tool_tutor_follow_issue to be created.
+    $table = new xmldb_table('tool_tutor_follow_issue');
+    // Conditionally launch create table for tool_tutor_follow_issue.
+    if (!$dbman->table_exists($table)) {
+        // Adding fields to table tool_tutor_follow_issue.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('reportid', XMLDB_TYPE_INTEGER, '20', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('reportorder', XMLDB_TYPE_INTEGER, '20', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('teacherid', XMLDB_TYPE_INTEGER, '20', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('status', XMLDB_TYPE_INTEGER, '20', null, null, null, '0');
+        $table->add_field('moduleid', XMLDB_TYPE_INTEGER, '20', null, null, null, null);
+        $table->add_field('issue', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('attach', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '20', null, null, null, null);
+        $table->add_field('lastupdate', XMLDB_TYPE_INTEGER, '20', null, null, null, null);
+        // Adding keys to table tool_tutor_follow_issue.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $dbman->create_table($table);
+    }
 
     return true;
 }

@@ -25,7 +25,7 @@
 
 use core\chart_bar;
 use core\chart_series;
-use tool_tutor_follow\dedication_time;
+use tool_tutor_follow\local\dedication_time;
 use tool_tutor_follow\task\data_user_tutor;
 
 /**
