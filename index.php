@@ -37,7 +37,8 @@ require_capability('tool/tutor_follow:view', context_system::instance());
 
 
 $PAGE->requires->jquery();
-$PAGE->requires->js_call_amd('tool_tutor_follow/div2', 'init');
+$PAGE->requires->js_call_amd('tool_tutor_follow/div4', 'init');
+$PAGE->requires->js_call_amd('tool_tutor_follow/reports', 'add_report');
 
 echo $OUTPUT->header();
 

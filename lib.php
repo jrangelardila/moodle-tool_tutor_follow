@@ -26,6 +26,7 @@
 use core\chart_bar;
 use core\chart_series;
 use tool_tutor_follow\local\dedication_time;
+use tool_tutor_follow\local\report_teacher;
 use tool_tutor_follow\task\data_user_tutor;
 
 /**
@@ -142,7 +143,16 @@ function tool_tutor_follow_print_data($data)
     $form->display();
 }
 
-
+/**
+ * Return time teacher connetion in a course
+ *
+ * @param $times
+ * @param $courseid
+ * @param $userid
+ * @return lang_string|string
+ * @throws coding_exception
+ * @throws dml_exception
+ */
 function tool_tutor_follow_get_time_connection($times, $courseid, $userid)
 {
     global $DB;
@@ -182,7 +192,6 @@ function tool_tutor_follow_get_time_connection($times, $courseid, $userid)
     }
 }
 
-
 /**
  * Return general data
  *
@@ -201,7 +210,7 @@ function tool_tutor_follow_option4()
     }
     $data->lastejecution = tool_tutor_follow_get_lastime_execution_task('\tool_tutor_follow\task\data_user_tutor');
 
-    echo $OUTPUT->render_from_template('tool_tutor_follow/option2/table', $data);
+    echo $OUTPUT->render_from_template('tool_tutor_follow/option4/table', $data);
 
     echo " <br><hr> ";
     tool_tutor_follow_get_chart_principales_caracteristicas_teachers($data);
@@ -257,11 +266,17 @@ function tool_tutor_follow_option2()
 
 }
 
+/**
+ * Third option
+ *
+ * @return void
+ * @throws moodle_exception
+ */
 function tool_tutor_follow_option3()
 {
+    global $OUTPUT;
 
-}
-
+    echo $OUTPUT->render_from_template('tool_tutor_follow/option3/table', []);}
 
 /**
  * Return info of the file
@@ -365,7 +380,7 @@ function tool_tutor_follow_get_chart_principales_caracteristicas_teachers($data)
     $chart->set_horizontal(true);
 
     $values = array_map(function ($user) {
-        return $user->all_studentes;
+        return $user->all_students;
     }, $data->users);
 
     $teacher = array_map(function ($user) {

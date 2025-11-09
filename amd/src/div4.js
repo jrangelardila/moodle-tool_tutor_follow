@@ -16,7 +16,7 @@
 /**
  * Handles the dashboard interactions for tutor follow-up data.
  *
- * @module     tool_tutor_follow/div2
+ * @module     tool_tutor_follow/div4
  * @package    tool_tutor_follow
  * @copyright  2025 Jhon Rangel Ardila
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
