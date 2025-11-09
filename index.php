@@ -53,9 +53,10 @@ echo html_writer::tag('hr', '');
 
 $option = optional_param('i', 1, PARAM_TEXT);
 
-tool_tutor_follow_print_bar($OUTPUT, 1, [
+tool_tutor_follow_print_bar($OUTPUT, $option, [
     get_string('grades', 'tool_tutor_follow'),
     get_string('globalnews', 'tool_tutor_follow'),
+    get_string('reports', 'tool_tutor_follow'),
     get_string('studentsdistribution', 'tool_tutor_follow'),
     get_string('settings', 'tool_tutor_follow'),
 ]);
@@ -76,6 +77,9 @@ switch ($option) {
         tool_tutor_follow_option3();
         break;
     case 4:
+        tool_tutor_follow_option4();
+        break;
+    case 5:
         $form = new \tool_tutor_follow\form\form_configuration(
             action: new moodle_url('/admin/tool/tutor_follow/index.php?i=4')
         );

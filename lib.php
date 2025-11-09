@@ -191,7 +191,7 @@ function tool_tutor_follow_get_time_connection($times, $courseid, $userid)
  * @throws dml_exception
  * @throws moodle_exception
  */
-function tool_tutor_follow_option3()
+function tool_tutor_follow_option4()
 {
     global $OUTPUT;
 
@@ -256,6 +256,12 @@ function tool_tutor_follow_option2()
 {
 
 }
+
+function tool_tutor_follow_option3()
+{
+
+}
+
 
 /**
  * Return info of the file

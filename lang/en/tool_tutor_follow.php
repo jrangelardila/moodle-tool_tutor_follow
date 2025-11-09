@@ -107,3 +107,4 @@ $string['noclosingdate'] = 'No closing date';
 $string['gradecount'] = 'Number of grades';
 $string['privacy:metadata'] = 'This plugin does not store any user data';
 $string['details'] = 'Details';
+$string['reports'] = 'Reports';
