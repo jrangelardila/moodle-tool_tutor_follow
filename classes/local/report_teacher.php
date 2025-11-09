@@ -25,6 +25,8 @@
 
 namespace tool_tutor_follow\local;
 
+require_once(__DIR__ . '/../../lib.php');
+
 use context;
 use core_form\dynamic_form;
 use moodle_url;
@@ -45,9 +47,20 @@ class report_teacher extends dynamic_form
         'created' => 0,
         'show' => 1,
         'filter' => 2,
-        'edit' => 3
+        'edit' => 3,
+        'update' => 4,
     ];
     private array $statusoptions;
+    //Elements for the db table
+    private $id;
+    private $status;
+    private $authorid;
+    private $title;
+    private $description;
+    private $cc_email;
+    private $cco_email;
+    private $timecreated;
+    private $lasupdated;
 
     /**
      * @throws \coding_exception
@@ -83,7 +96,25 @@ class report_teacher extends dynamic_form
 
     public function process_dynamic_submission()
     {
-        // TODO: Implement process_dynamic_submission() method.
+        switch ($this->type) {
+            case self::TYPES['created']:
+            case self::TYPES['update']:
+                $data = $this->get_data();
+                $this->status = $data->status;
+                $this->authorid = $data->authorid;
+                $this->title = $data->title;
+                $this->description = $data->description['text'];
+                $this->cc_email = implode(',', $data->cc_email);
+                if ($data->cco_email) {
+                    $this->cco_email = implode(',', $data->cco_email);
+                } else {
+                    $this->cco_email = '';
+                }
+
+
+                $this->save();
+                break;
+        }
     }
 
     public function set_data_for_dynamic_submission(): void
@@ -123,6 +154,19 @@ class report_teacher extends dynamic_form
                 $mform->setDefault('status', 0);
                 $mform->setType('status', PARAM_INT);
 
+                $data = json_decode(tool_tutor_follow_get_data('json_user_data', 'data_user'));
+                $values = [];
+                foreach ($data->users as $user) {
+                    $values[$user->id] = $user->firstname . " " . $user->lastname . " " . $user->idnumber . " " . $user->email;
+                }
+                $values[0] = "";
+                $mform->addElement('autocomplete', 'authorid', get_string('status', 'tool_tutor_follow'), $values, [
+                    'multiple' => false,
+                    'noselectionstring' => get_string('choosedots'),
+                ]);
+                $mform->setDefault('authorid', 0);
+                $mform->setType('authorid', PARAM_INT);
+
                 $mform->addElement('text', 'title', get_string('title', 'tool_tutor_follow'), 'size="64"');
                 $mform->setType('title', PARAM_TEXT);
 
@@ -152,6 +196,7 @@ class report_teacher extends dynamic_form
                 $mform->addRule('description', get_string('required'), 'required', null, 'client');
                 $mform->addRule('title', get_string('required'), 'required', null, 'client');
                 $mform->addRule('cc_email', get_string('required'), 'required', null, 'client');
+                $mform->addRule('authorid', get_string('required'), 'required', null, 'client');
 
             case self::TYPES['show']:
                 break;
@@ -160,6 +205,42 @@ class report_teacher extends dynamic_form
             case self::TYPES['edit']:
                 break;
         }
-        $this->add_action_buttons(true, get_string('savechanges'));
+    }
+
+    /**
+     * Save record
+     *
+     * @throws \dml_exception
+     */
+    protected function save()
+    {
+        global $DB;
+        $record = $this->to_stdclass();
+        $record->lasupdated = time();
+        if ($this->id) {
+
+        } else {
+            unset($record->id);
+            $record->timecreated = time();
+            $DB->insert_record('tool_tutor_follow_report', $record);
+        }
+    }
+
+    /**
+     * Return stdclass
+     *
+     * @return \stdClass
+     */
+    public function to_stdclass(): \stdClass
+    {
+        return (object)[
+            'id' => $this->id,
+            'status' => $this->status,
+            'authorid' => $this->authorid,
+            'title' => $this->title,
+            'description' => $this->description,
+            'cc_email' => $this->cc_email,
+            'cco_email' => $this->cco_email,
+        ];
     }
 }

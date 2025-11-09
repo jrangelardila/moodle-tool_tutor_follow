@@ -52,7 +52,7 @@ class filter_user_data extends \moodleform
         $data = json_decode(tool_tutor_follow_get_data('json_user_data', 'data_user'));
         $values = [];
         foreach ($data->users as $user) {
-            $values[$user->id] = $user->firstname . " " . $user->lastname;
+            $values[$user->id] = $user->firstname . " " . $user->lastname . " " . $user->idnumber . " " . $user->email;
         }
 
         $categories_config = json_decode(get_config('tool_tutor_follow', 'categories'));
@@ -62,7 +62,7 @@ class filter_user_data extends \moodleform
                 $categoria = core_course_category::get($category);
                 $fullpath = $categoria->get_nested_name(false, '/');
                 $values_categories[$category] = $fullpath;
-            }catch (\moodle_exception $e){
+            } catch (\moodle_exception $e) {
 
             }
         }
