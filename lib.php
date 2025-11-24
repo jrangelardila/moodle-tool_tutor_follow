@@ -274,9 +274,132 @@ function tool_tutor_follow_option2()
  */
 function tool_tutor_follow_option3()
 {
-    global $OUTPUT;
+    global $OUTPUT, $CFG, $DB;
+    require_once($CFG->libdir . '/tablelib.php');
 
-    echo $OUTPUT->render_from_template('tool_tutor_follow/option3/table', []);}
+    $baseurl = new moodle_url('/admin/tool/tutor_follow/index.php', [
+        'i' => optional_param('i', 0, PARAM_INT)
+    ]);
+
+    $table = new flexible_table('tool_tutor_follow_report_table');
+    $table->define_baseurl($baseurl);
+    $table->set_attribute('style', 'position:absolute; background:white;');
+    $columns = [
+        'status',
+        'authorid',
+        'title',
+        'description',
+        'cc_email',
+        'cco_email',
+        'timecreated',
+        'lasupdated'
+    ];
+
+    $headers = [
+        get_string('status', 'tool_tutor_follow'),
+        get_string('authorid', 'tool_tutor_follow'),
+        get_string('title', 'tool_tutor_follow'),
+        get_string('description', 'tool_tutor_follow'),
+        get_string('cc_email', 'tool_tutor_follow'),
+        get_string('cco_email', 'tool_tutor_follow'),
+        get_string('timecreated', 'tool_tutor_follow'),
+        get_string('lasupdated', 'tool_tutor_follow')
+    ];
+
+    $table->define_columns($columns);
+    $table->define_headers($headers);
+
+    $table->sortable(true, 'timecreated', SORT_DESC);
+    $table->collapsible(true);
+    $table->set_attribute('class', 'generaltable generalbox');
+
+    $table->no_sorting('description');
+    $table->setup();
+
+    $records = array_values($DB->get_records('tool_tutor_follow_report'));
+    $sortcols = $table->get_sort_columns();
+
+    if (!empty($sortcols)) {
+        reset($sortcols);
+        $primarycol = key($sortcols);
+        $direction = current($sortcols);
+        if (in_array($primarycol, $columns)) {
+            usort($records, function ($a, $b) use ($primarycol, $direction) {
+                $valA = isset($a->{$primarycol}) ? $a->{$primarycol} : null;
+                $valB = isset($b->{$primarycol}) ? $b->{$primarycol} : null;
+                if (is_numeric($valA) && is_numeric($valB)) {
+                    $cmp = ($valA < $valB) ? -1 : (($valA > $valB) ? 1 : 0);
+                } else {
+                    $cmp = strcasecmp((string)$valA, (string)$valB);
+                    if ($cmp < 0) {
+                        $cmp = -1;
+                    } elseif ($cmp > 0) {
+                        $cmp = 1;
+                    } else {
+                        $cmp = 0;
+                    }
+                }
+
+                if ($direction === SORT_ASC) {
+                    return $cmp;
+                } else {
+                    return -$cmp;
+                }
+            });
+        }
+    }
+
+    foreach ($records as $record) {
+        $timecreated = !empty($record->timecreated) ? userdate($record->timecreated) : '-';
+        $lasupdated = !empty($record->lasupdated) ? userdate($record->lasupdated) : '-';
+
+        $record->cc_email = !empty($record->cc_email)
+            ? tool_tutor_follow_get_listusers($record->cc_email)
+            : "";
+
+        $record->cco_email = !empty($record->cco_email)
+            ? tool_tutor_follow_get_listusers($record->cco_email)
+            : "";
+
+        $url = new moodle_url('user/profile.php', ['id' => $record->authorid]);
+        $row = [
+            $record->status,
+            "<a href='{$url}' target='_blank'>" . fullname($DB->get_record('user', ['id' => $record->authorid])) . "</a>",
+            $record->title,
+            shorten_text($record->description, 120),
+            $record->cc_email,
+            $record->cco_email,
+            $timecreated,
+            $lasupdated
+        ];
+
+        $table->add_data($row);
+    }
+    echo $OUTPUT->render_from_template('tool_tutor_follow/option3/table', []);
+    $table->finish_output();
+}
+
+
+/**
+ * Return list of users
+ *
+ * @param $list
+ * @return string
+ * @throws dml_exception
+ * @throws moodle_exception
+ */
+function tool_tutor_follow_get_listusers($list)
+{
+    global $DB;
+    $ccids = array_filter(array_map('intval', explode(',', $list)));
+    $users = $DB->get_records_list('user', 'id', $ccids, '', 'id,firstname, lastname, email');
+    return implode(', ',
+        array_map(function ($u) {
+            $url = new moodle_url('/user/profile.php', ['id' => $u->id]);
+            return "<a href='$url' target='_blank'>" . fullname($u) . " " . $u->email . "</a>";
+        }, $users)
+    );
+}
 
 /**
  * Return info of the file

@@ -120,3 +120,13 @@ $string['status_report_inprocess'] = 'In process';
 $string['status_report_sended'] = 'Sent';
 $string['status_report_complete'] = 'Completed';
 $string['add_report'] = 'Add new report';
+$string['tutorfollowreport'] = 'Tutor Follow-up Report';
+$string['status'] = 'Status';
+$string['authorid'] = 'Author ID';
+$string['title'] = 'Title';
+$string['description'] = 'Description';
+$string['cc_email'] = 'CC Email';
+$string['cco_email'] = 'BCC Email';
+$string['timecreated'] = 'Created At';
+$string['lasupdated'] = 'Last Updated';
+
