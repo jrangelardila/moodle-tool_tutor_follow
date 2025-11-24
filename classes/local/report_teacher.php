@@ -160,7 +160,7 @@ class report_teacher extends dynamic_form
                     $values[$user->id] = $user->firstname . " " . $user->lastname . " " . $user->idnumber . " " . $user->email;
                 }
                 $values[0] = "";
-                $mform->addElement('autocomplete', 'authorid', get_string('status', 'tool_tutor_follow'), $values, [
+                $mform->addElement('autocomplete', 'authorid', get_string('author', 'tool_tutor_follow'), $values, [
                     'multiple' => false,
                     'noselectionstring' => get_string('choosedots'),
                 ]);

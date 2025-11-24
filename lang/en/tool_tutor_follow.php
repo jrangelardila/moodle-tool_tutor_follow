@@ -129,4 +129,5 @@ $string['cc_email'] = 'CC Email';
 $string['cco_email'] = 'BCC Email';
 $string['timecreated'] = 'Created At';
 $string['lasupdated'] = 'Last Updated';
+$string['author'] = 'Author';
 
