@@ -142,69 +142,138 @@ class report_teacher extends dynamic_form
      */
     protected function definition()
     {
+        global $DB;
         $mform = $this->_form;
+        //Modifiy the type, when the petition is origin in js
+        if ($this->optional_param('type', 'created', PARAM_TEXT)) {
+            $this->type = self::TYPES[$this->optional_param('type', 'created', PARAM_TEXT)];
+        }
 
         switch ($this->type) {
             case self::TYPES['created']:
-
-                $mform->addElement('autocomplete', 'status', get_string('status', 'tool_tutor_follow'), $this->statusoptions, [
-                    'multiple' => false,
-                    'noselectionstring' => get_string('choosedots'),
-                ]);
-                $mform->setDefault('status', 0);
-                $mform->setType('status', PARAM_INT);
-
-                $data = json_decode(tool_tutor_follow_get_data('json_user_data', 'data_user'));
-                $values = [];
-                foreach ($data->users as $user) {
-                    $values[$user->id] = $user->firstname . " " . $user->lastname . " " . $user->idnumber . " " . $user->email;
-                }
-                $values[0] = "";
-                $mform->addElement('autocomplete', 'authorid', get_string('author', 'tool_tutor_follow'), $values, [
-                    'multiple' => false,
-                    'noselectionstring' => get_string('choosedots'),
-                ]);
-                $mform->setDefault('authorid', 0);
-                $mform->setType('authorid', PARAM_INT);
-
-                $mform->addElement('text', 'title', get_string('title', 'tool_tutor_follow'), 'size="64"');
-                $mform->setType('title', PARAM_TEXT);
-
-                $mform->addElement('editor', 'description', get_string('description', 'tool_tutor_follow'), null, [
-                    'maxfiles' => 0,
-                    'maxbytes' => 0,
-                    'context' => \context_system::instance(),
-                ]);
-                $mform->setType('description', PARAM_RAW);
-
-                $mform->addElement('autocomplete', 'cc_email', get_string('cc_email', 'tool_tutor_follow'), [], [
-                    'multiple' => true,
-                    'ajax' => 'core_user/form_user_selector',
-                    'noselectionstring' => get_string('seachuser', 'tool_tutor_follow'),
-                ]);
-                $mform->setType('cc_email', PARAM_SEQUENCE);
-
-                $mform->addElement('autocomplete', 'cco_email', get_string('cco_email', 'tool_tutor_follow'), [], [
-                    'multiple' => true,
-                    'ajax' => 'core_user/form_user_selector',
-                    'noselectionstring' => get_string('seachuser', 'tool_tutor_follow'),
-                ]);
-                $mform->setType('cco_email', PARAM_SEQUENCE);
-
-                $mform->addRule('status', get_string('required'), 'required', null, 'client');
-                $mform->addRule('title', get_string('required'), 'required', null, 'client');
-                $mform->addRule('description', get_string('required'), 'required', null, 'client');
-                $mform->addRule('title', get_string('required'), 'required', null, 'client');
-                $mform->addRule('cc_email', get_string('required'), 'required', null, 'client');
-                $mform->addRule('authorid', get_string('required'), 'required', null, 'client');
-
+                $this->get_field_for_edit_created($mform);
             case self::TYPES['show']:
                 break;
             case self::TYPES['filter']:
                 break;
             case self::TYPES['edit']:
+                $recordid = $this->optional_param('id', 0, PARAM_TEXT);
+                $record = $DB->get_record('tool_tutor_follow_report', array('id' => $recordid));
+                $this->get_field_for_edit_created($mform, ccochoices: explode(',', $record->cco_email),
+                    ccchoices: explode(',', $record->cc_email));
+                $this->set_data([
+                    'status' => $record->status,
+                    'authorid' => $record->authorid,
+                    'title' => $record->title,
+                ]);
                 break;
         }
+    }
+
+    /**
+     * Get field for edit and created
+     *
+     * @param $mform
+     * @return void
+     * @throws \coding_exception
+     * @throws \dml_exception
+     */
+    public function get_field_for_edit_created($mform, $ccochoices = null, $ccchoices = null)
+    {
+        $mform->addElement('autocomplete', 'status', get_string('status', 'tool_tutor_follow'), $this->statusoptions, [
+            'multiple' => false,
+            'noselectionstring' => get_string('choosedots'),
+        ]);
+        $mform->setDefault('status', 0);
+        $mform->setType('status', PARAM_INT);
+
+        $data = json_decode(tool_tutor_follow_get_data('json_user_data', 'data_user'));
+        $values = [];
+        foreach ($data->users as $user) {
+            $values[$user->id] = $user->firstname . " " . $user->lastname . " " . $user->idnumber . " " . $user->email;
+        }
+        $values[0] = "";
+        $mform->addElement('autocomplete', 'authorid', get_string('author', 'tool_tutor_follow'), $values, [
+            'multiple' => false,
+            'noselectionstring' => get_string('choosedots'),
+        ]);
+        $mform->setDefault('authorid', 0);
+        $mform->setType('authorid', PARAM_INT);
+
+        $mform->addElement('text', 'title', get_string('title', 'tool_tutor_follow'), 'size="64"');
+        $mform->setType('title', PARAM_TEXT);
+
+        $mform->addElement('editor', 'description', get_string('description', 'tool_tutor_follow'), null, [
+            'maxfiles' => 0,
+            'maxbytes' => 0,
+            'context' => \context_system::instance(),
+        ]);
+        $mform->setType('description', PARAM_RAW);
+        //==============CC_MAIL=============
+        if ($ccchoices) {
+            $attributes = [
+                'multiple' => true,
+                'ajax' => 'core_user/form_user_selector',
+                'noselectionstring' => get_string('seachuser', 'tool_tutor_follow'),
+                'valuehtmlcallback' => function ($userid) {
+                    global $DB, $OUTPUT;
+                    $context = \context_system::instance();
+                    $fields = \core_user\fields::for_name()->with_identity($context, false);
+                    $record = \core_user::get_user($userid, 'id' . $fields->get_sql()->selects, MUST_EXIST);
+                    $user = (object)[
+                        'id' => $record->id,
+                        'fullname' => fullname($record, has_capability('moodle/site:viewfullnames', $context)),
+                        'extrafields' => [],
+                    ];
+                    foreach ($fields->get_required_fields([\core_user\fields::PURPOSE_IDENTITY]) as $extrafield) {
+                        $user->extrafields[] = (object)[
+                            'name' => $extrafield,
+                            'value' => s($record->$extrafield)
+                        ];
+                    }
+                    return $OUTPUT->render_from_template('core_user/form_user_selector_suggestion', $user);
+                },
+            ];
+        }
+        $mform->addElement('autocomplete', 'cc_email', get_string('cc_email', 'tool_tutor_follow'), [], $attributes);
+        $mform->setType('cc_email', PARAM_SEQUENCE);
+        $mform->setDefault('cc_email', $ccchoices);
+        //==============CCO_MAIL=============
+        if ($ccochoices) {
+            $attributes = [
+                'multiple' => true,
+                'ajax' => 'core_user/form_user_selector',
+                'noselectionstring' => get_string('seachuser', 'tool_tutor_follow'),
+                'valuehtmlcallback' => function ($userid) {
+                    global $DB, $OUTPUT;
+                    $context = \context_system::instance();
+                    $fields = \core_user\fields::for_name()->with_identity($context, false);
+                    $record = \core_user::get_user($userid, 'id' . $fields->get_sql()->selects, MUST_EXIST);
+                    $user = (object)[
+                        'id' => $record->id,
+                        'fullname' => fullname($record, has_capability('moodle/site:viewfullnames', $context)),
+                        'extrafields' => [],
+                    ];
+                    foreach ($fields->get_required_fields([\core_user\fields::PURPOSE_IDENTITY]) as $extrafield) {
+                        $user->extrafields[] = (object)[
+                            'name' => $extrafield,
+                            'value' => s($record->$extrafield)
+                        ];
+                    }
+                    return $OUTPUT->render_from_template('core_user/form_user_selector_suggestion', $user);
+                },
+            ];
+        }
+        $mform->addElement('autocomplete', 'cco_email', get_string('cco_email', 'tool_tutor_follow'), [], $attributes);
+        $mform->setType('cco_email', PARAM_SEQUENCE);
+        $mform->setDefault('cco_email', $ccochoices);
+
+        $mform->addRule('status', get_string('required'), 'required', null, 'client');
+        $mform->addRule('title', get_string('required'), 'required', null, 'client');
+        $mform->addRule('description', get_string('required'), 'required', null, 'client');
+        $mform->addRule('title', get_string('required'), 'required', null, 'client');
+        $mform->addRule('cc_email', get_string('required'), 'required', null, 'client');
+        $mform->addRule('authorid', get_string('required'), 'required', null, 'client');
     }
 
     /**

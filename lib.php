@@ -370,7 +370,16 @@ function tool_tutor_follow_option3()
             $record->cc_email,
             $record->cco_email,
             $timecreated,
-            $lasupdated
+            $lasupdated,
+            '
+    <div class="d-flex flex-column" style="gap:4px;">
+        <button type="button" data-id="' . $record->id . '" class="btn btn-secondary btn-sm edit-report" style="padding: 4px 8px;">
+            <i class="fas fa-pen"></i>
+        </button>
+        <button type="button" data-id="' . $record->id . '" class="btn btn-danger btn-sm delete-report" style="padding: 4px 8px;">
+            <i class="fas fa-trash"></i>
+        </button>
+    </div>´ '
         ];
 
         $table->add_data($row);

@@ -30,6 +30,7 @@ define([
 
     return {
         add_report: async function () {
+            //Add report
             const title = await Str.get_string('add_report', 'tool_tutor_follow');
             $("#add_report").on("click", function (e) {
                 e.preventDefault();
@@ -40,6 +41,42 @@ define([
                     },
                     args: {
                         type: 'created'
+                    }
+                });
+
+                form.show();
+            });
+            //Edit report
+            $(".edit-report").on("click", async function (e) {
+                e.preventDefault();
+                const title = await Str.get_string('edit_report', 'tool_tutor_follow');
+                const id = $(this).data('id');
+                const form = new ModalForm({
+                    formClass: 'tool_tutor_follow\\local\\report_teacher',
+                    modalConfig: {
+                        title: `<h3 class="text-primary">${title}</h3>`,
+                    },
+                    args: {
+                        type: 'edit',
+                        id: id,
+                    }
+                });
+
+                form.show();
+            });
+            //Delete report
+            $(".delete-report").on("click", async function (e) {
+                e.preventDefault();
+                const title = await Str.get_string('delete-report', 'tool_tutor_follow');
+                const id = $(this).data('id');
+                const form = new ModalForm({
+                    formClass: 'tool_tutor_follow\\local\\report_teacher',
+                    modalConfig: {
+                        title: `<h3 class="text-primary">${title}</h3>`,
+                    },
+                    args: {
+                        type: 'delete',
+                        id: id,
                     }
                 });
 

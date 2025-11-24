@@ -130,4 +130,5 @@ $string['cco_email'] = 'BCC Email';
 $string['timecreated'] = 'Created At';
 $string['lasupdated'] = 'Last Updated';
 $string['author'] = 'Author';
-
+$string['edit_report'] = 'Edit report';
+$string['delete-report'] = 'Delete report';
