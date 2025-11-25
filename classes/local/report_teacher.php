@@ -96,9 +96,13 @@ class report_teacher extends dynamic_form
 
     /**
      * @throws \dml_exception
+     * @throws \moodle_exception
      */
     public function process_dynamic_submission()
     {
+        if ($this->optional_param('type', 'created', PARAM_TEXT)) {
+            $this->type = self::TYPES[$this->optional_param('type', 'created', PARAM_TEXT)];
+        }
         switch ($this->type) {
             case self::TYPES['created']:
             case self::TYPES['edit']:
@@ -113,8 +117,9 @@ class report_teacher extends dynamic_form
                 } else {
                     $this->cco_email = '';
                 }
-                if ($data->recordid) {
-                    $this->id = $data->recordid;
+                if ($this->optional_param('type', 'created', PARAM_TEXT)) {
+                    $this->id = $data->id;
+                    $this->timecreated = $data->timecreated;
                 }
                 $this->save();
                 break;
@@ -165,7 +170,8 @@ class report_teacher extends dynamic_form
                 $record = $DB->get_record('tool_tutor_follow_report', array('id' => $recordid));
                 $record->cco_email = !empty($record->cco_email) ? explode(',', $record->cco_email) : null;
                 $this->get_field_for_edit_created($mform, ccochoices: $record->cco_email,
-                    ccchoices: explode(',', $record->cc_email), id: $recordid);
+                    ccchoices: explode(',', $record->cc_email), id: $recordid,
+                    timecreated: $record->timecreated);
                 $this->set_data([
                     'status' => $record->status,
                     'authorid' => $record->authorid,
@@ -183,7 +189,7 @@ class report_teacher extends dynamic_form
      * @throws \coding_exception
      * @throws \dml_exception
      */
-    public function get_field_for_edit_created($mform, $ccochoices = null, $ccchoices = null, $id = null)
+    public function get_field_for_edit_created($mform, $ccochoices = null, $ccchoices = null, $id = null, $timecreated = null)
     {
         $mform->addElement('autocomplete', 'status', get_string('status', 'tool_tutor_follow'), $this->statusoptions, [
             'multiple' => false,
@@ -215,31 +221,30 @@ class report_teacher extends dynamic_form
         ]);
         $mform->setType('description', PARAM_RAW);
 
-        if ($ccchoices) {
-            $attributes = [
-                'multiple' => true,
-                'ajax' => 'core_user/form_user_selector',
-                'noselectionstring' => get_string('seachuser', 'tool_tutor_follow'),
-                'valuehtmlcallback' => function ($userid) {
-                    global $DB, $OUTPUT;
-                    $context = \context_system::instance();
-                    $fields = \core_user\fields::for_name()->with_identity($context, false);
-                    $record = \core_user::get_user($userid, 'id' . $fields->get_sql()->selects, MUST_EXIST);
-                    $user = (object)[
-                        'id' => $record->id,
-                        'fullname' => fullname($record, has_capability('moodle/site:viewfullnames', $context)),
-                        'extrafields' => [],
+        $attributes = [
+            'multiple' => true,
+            'ajax' => 'core_user/form_user_selector',
+            'noselectionstring' => get_string('seachuser', 'tool_tutor_follow'),
+            'valuehtmlcallback' => function ($userid) {
+                global $DB, $OUTPUT;
+                $context = \context_system::instance();
+                $fields = \core_user\fields::for_name()->with_identity($context, false);
+                $record = \core_user::get_user($userid, 'id' . $fields->get_sql()->selects, MUST_EXIST);
+                $user = (object)[
+                    'id' => $record->id,
+                    'fullname' => fullname($record, has_capability('moodle/site:viewfullnames', $context)),
+                    'extrafields' => [],
+                ];
+                foreach ($fields->get_required_fields([\core_user\fields::PURPOSE_IDENTITY]) as $extrafield) {
+                    $user->extrafields[] = (object)[
+                        'name' => $extrafield,
+                        'value' => s($record->$extrafield)
                     ];
-                    foreach ($fields->get_required_fields([\core_user\fields::PURPOSE_IDENTITY]) as $extrafield) {
-                        $user->extrafields[] = (object)[
-                            'name' => $extrafield,
-                            'value' => s($record->$extrafield)
-                        ];
-                    }
-                    return $OUTPUT->render_from_template('core_user/form_user_selector_suggestion', $user);
-                },
-            ];
-        }
+                }
+                return $OUTPUT->render_from_template('core_user/form_user_selector_suggestion', $user);
+            },
+        ];
+
         $mform->addElement('autocomplete', 'cc_email', get_string('cc_email', 'tool_tutor_follow'), [], $attributes);
         $mform->setType('cc_email', PARAM_SEQUENCE);
         $mform->setDefault('cc_email', $ccchoices);
@@ -257,9 +262,11 @@ class report_teacher extends dynamic_form
         $mform->addRule('cc_email', get_string('required'), 'required', null, 'client');
         $mform->addRule('authorid', get_string('required'), 'required', null, 'client');
 
-        if ($id) {
-            $mform->addElement("hidden", 'recordid', get_string('id', 'core'), null);
-            $mform->setDefault('recordid', $id);
+        if ($this->optional_param('id', 'created', PARAM_INT)) {
+            $mform->addElement("text", 'id', get_string('id', 'core'));
+            $mform->setDefault('id', $id);
+            $mform->addElement("text", 'timecreated', get_string('timecreated', 'core'));
+            $mform->setDefault('timecreated', $timecreated);
         }
     }
 
@@ -267,14 +274,17 @@ class report_teacher extends dynamic_form
      * Save record
      *
      * @throws \dml_exception
+     * @throws \moodle_exception
      */
     protected function save()
     {
         global $DB;
         $record = $this->to_stdclass();
         $record->lasupdated = time();
-        if ($this->id) {
-
+        if ($this->optional_param('type', 'created', PARAM_TEXT)) {
+            $record->id = $this->optional_param('id', null, PARAM_INT);
+            $record->timecreated = $this->timecreated;
+            $DB->update_record('tool_tutor_follow_report', $record);
         } else {
             unset($record->id);
             $record->timecreated = time();
@@ -297,6 +307,7 @@ class report_teacher extends dynamic_form
             'description' => $this->description,
             'cc_email' => $this->cc_email,
             'cco_email' => $this->cco_email,
+            'timecreated' => $this->timecreated,
         ];
     }
 }
