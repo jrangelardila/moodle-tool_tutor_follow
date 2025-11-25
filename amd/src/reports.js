@@ -62,7 +62,12 @@ define([
                     }
                 });
 
-                form.show();
+                form.addEventListener(form.events.FORM_SUBMITTED, async function () {
+                    location.reload();
+                });
+
+
+                await form.show();
             });
             //Delete report
             $(".delete-report").on("click", async function (e) {

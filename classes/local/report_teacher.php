@@ -263,9 +263,9 @@ class report_teacher extends dynamic_form
         $mform->addRule('authorid', get_string('required'), 'required', null, 'client');
 
         if ($this->optional_param('id', 'created', PARAM_INT)) {
-            $mform->addElement("text", 'id', get_string('id', 'core'));
+            $mform->addElement("hidden", 'id', get_string('id', 'core'));
             $mform->setDefault('id', $id);
-            $mform->addElement("text", 'timecreated', get_string('timecreated', 'core'));
+            $mform->addElement("hidden", 'timecreated', get_string('timecreated', 'core'));
             $mform->setDefault('timecreated', $timecreated);
         }
     }
