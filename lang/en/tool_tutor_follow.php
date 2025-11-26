@@ -132,3 +132,5 @@ $string['lasupdated'] = 'Last Updated';
 $string['author'] = 'Author';
 $string['edit_report'] = 'Edit report';
 $string['delete-report'] = 'Delete report';
+$string['confirm_delete_text'] = 'Are you sure you want to delete this record? This action cannot be undone.';
+

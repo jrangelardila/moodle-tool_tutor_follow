@@ -43,7 +43,9 @@ define([
                         type: 'created'
                     }
                 });
-
+                form.addEventListener(form.events.FORM_SUBMITTED, async function () {
+                    location.reload();
+                });
                 form.show();
             });
             //Edit report
@@ -84,8 +86,12 @@ define([
                         id: id,
                     }
                 });
+                const element = $(this);
+                form.addEventListener(form.events.FORM_SUBMITTED, async function () {
+                    element.closest('tr').fadeOut(200);
+                });
 
-                form.show();
+                await form.show();
             });
         }
     };

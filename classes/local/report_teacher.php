@@ -44,11 +44,9 @@ class report_teacher extends dynamic_form
      * Types de forms
      */
     const TYPES = [
-        'created' => 0,
-        'show' => 1,
-        'filter' => 2,
-        'edit' => 3,
-        'update' => 4,
+        'created' => 1,
+        'edit' => 2,
+        'delete' => 3,
     ];
     private array $statusoptions;
     //Elements for the db table
@@ -100,28 +98,23 @@ class report_teacher extends dynamic_form
      */
     public function process_dynamic_submission()
     {
-        if ($this->optional_param('type', 'created', PARAM_TEXT)) {
-            $this->type = self::TYPES[$this->optional_param('type', 'created', PARAM_TEXT)];
-        }
-        switch ($this->type) {
+        global $DB;
+        $data = $this->get_data();
+        switch (self::TYPES[$data->type]) {
             case self::TYPES['created']:
             case self::TYPES['edit']:
-                $data = $this->get_data();
                 $this->status = $data->status;
                 $this->authorid = $data->authorid;
                 $this->title = $data->title;
-                $this->description = $data->description['text'];
-                $this->cc_email = implode(',', $data->cc_email);
-                if ($data->cco_email) {
-                    $this->cco_email = implode(',', $data->cco_email);
-                } else {
-                    $this->cco_email = '';
-                }
-                if ($this->optional_param('type', 'created', PARAM_TEXT)) {
-                    $this->id = $data->id;
-                    $this->timecreated = $data->timecreated;
-                }
+                $this->description = $data->description['text'] ?? '';
+                $this->cc_email = !empty($data->cc_email) ? implode(',', $data->cc_email) : '';
+                $this->cco_email = !empty($data->cco_email) ? implode(',', $data->cco_email) : '';
+
                 $this->save();
+                break;
+            case self::TYPES['delete']:
+                $DB->delete_records('tool_tutor_follow_report', ['id' => $data->id]);
+                $DB->delete_records('tool_tutor_follow_issue', ['reportid' => $data->id]);
                 break;
         }
     }
@@ -157,13 +150,12 @@ class report_teacher extends dynamic_form
         if ($this->optional_param('type', 'created', PARAM_TEXT)) {
             $this->type = self::TYPES[$this->optional_param('type', 'created', PARAM_TEXT)];
         }
-
+        $mform->addElement('hidden', 'type', get_string('core', 'type'));
+        $mform->setType('type', PARAM_TEXT);
+        $mform->setDefault('type', $this->optional_param('type', 'created', PARAM_TEXT));
         switch ($this->type) {
             case self::TYPES['created']:
                 $this->get_field_for_edit_created($mform);
-            case self::TYPES['show']:
-                break;
-            case self::TYPES['filter']:
                 break;
             case self::TYPES['edit']:
                 $recordid = $this->optional_param('id', 0, PARAM_TEXT);
@@ -178,6 +170,13 @@ class report_teacher extends dynamic_form
                     'title' => $record->title,
                 ]);
                 break;
+            case self::TYPES['delete']:
+                $mform->addElement('static', 'deletemsg', '',
+                    get_string('confirm_delete_text', 'tool_tutor_follow')
+                );
+                $mform->addElement("hidden", 'id', get_string('id', 'core'));
+                $mform->setDefault('id', $this->optional_param('id', 0, PARAM_TEXT));
+                break;
         }
     }
 
@@ -185,6 +184,10 @@ class report_teacher extends dynamic_form
      * Get field for edit and created
      *
      * @param $mform
+     * @param null $ccochoices
+     * @param null $ccchoices
+     * @param null $id
+     * @param null $timecreated
      * @return void
      * @throws \coding_exception
      * @throws \dml_exception
@@ -262,7 +265,7 @@ class report_teacher extends dynamic_form
         $mform->addRule('cc_email', get_string('required'), 'required', null, 'client');
         $mform->addRule('authorid', get_string('required'), 'required', null, 'client');
 
-        if ($this->optional_param('id', 'created', PARAM_INT)) {
+        if ($this->optional_param('id', 0, PARAM_INT)) {
             $mform->addElement("hidden", 'id', get_string('id', 'core'));
             $mform->setDefault('id', $id);
             $mform->addElement("hidden", 'timecreated', get_string('timecreated', 'core'));
@@ -281,9 +284,9 @@ class report_teacher extends dynamic_form
         global $DB;
         $record = $this->to_stdclass();
         $record->lasupdated = time();
-        if ($this->optional_param('type', 'created', PARAM_TEXT)) {
-            $record->id = $this->optional_param('id', null, PARAM_INT);
-            $record->timecreated = $this->timecreated;
+        if ($this->get_data()->id) {
+            $record->id = $this->get_data()->id;
+            $record->timecreated = $this->get_data()->timecreated;
             $DB->update_record('tool_tutor_follow_report', $record);
         } else {
             unset($record->id);
