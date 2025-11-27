@@ -28,8 +28,10 @@ namespace tool_tutor_follow\local;
 require_once(__DIR__ . '/../../lib.php');
 
 use context;
+use context_system;
 use core_form\dynamic_form;
 use moodle_url;
+use stdClass;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -106,15 +108,37 @@ class report_teacher extends dynamic_form
                 $this->status = $data->status;
                 $this->authorid = $data->authorid;
                 $this->title = $data->title;
-                $this->description = $data->description['text'] ?? '';
+                $this->description = '';
                 $this->cc_email = !empty($data->cc_email) ? implode(',', $data->cc_email) : '';
                 $this->cco_email = !empty($data->cco_email) ? implode(',', $data->cco_email) : '';
 
-                $this->save();
+                $itemid = $this->save();
+
+                //Process files
+                $context = context_system::instance();
+                $data = file_postupdate_standard_editor(
+                    $data,
+                    'description',
+                    [
+                        'trusttext' => true,
+                        'subdirs' => true,
+                        'maxfiles' => 20,
+                        'context' => \context_system::instance()
+                    ],
+                    $context,
+                    'tool_tutor_follow',
+                    'description',
+                    $itemid
+                );
+                $record = $DB->get_record('tool_tutor_follow_report', ['id' => $itemid]);
+                $record->description = $data->description;
+                $DB->update_record('tool_tutor_follow_report', $record);
                 break;
             case self::TYPES['delete']:
                 $DB->delete_records('tool_tutor_follow_report', ['id' => $data->id]);
                 $DB->delete_records('tool_tutor_follow_issue', ['reportid' => $data->id]);
+                $fs = get_file_storage();
+                $fs->delete_area_files(context_system::instance()->id, 'tool_tutor_follow', 'description', $data->id);
                 break;
         }
     }
@@ -161,13 +185,35 @@ class report_teacher extends dynamic_form
                 $recordid = $this->optional_param('id', 0, PARAM_TEXT);
                 $record = $DB->get_record('tool_tutor_follow_report', array('id' => $recordid));
                 $record->cco_email = !empty($record->cco_email) ? explode(',', $record->cco_email) : null;
+
                 $this->get_field_for_edit_created($mform, ccochoices: $record->cco_email,
                     ccchoices: explode(',', $record->cc_email), id: $recordid,
                     timecreated: $record->timecreated);
+
+                $context = context_system::instance();
+                $options = [
+                    'trusttext' => true,
+                    'subdirs' => true,
+                    'maxfiles' => 20,
+                    'context' => $context
+                ];
+                $edata = new stdClass();
+                $edata->description = $record->description;
+                $edata->descriptionformat = FORMAT_HTML;
+                $edata = file_prepare_standard_editor(
+                    $edata,
+                    'description',
+                    $options,
+                    $context,
+                    'tool_tutor_follow',
+                    'description',
+                    $record->id
+                );
                 $this->set_data([
                     'status' => $record->status,
                     'authorid' => $record->authorid,
                     'title' => $record->title,
+                    'description_editor' => $edata->description_editor,
                 ]);
                 break;
             case self::TYPES['delete']:
@@ -217,12 +263,13 @@ class report_teacher extends dynamic_form
         $mform->addElement('text', 'title', get_string('title', 'tool_tutor_follow'), 'size="64"');
         $mform->setType('title', PARAM_TEXT);
 
-        $mform->addElement('editor', 'description', get_string('description', 'tool_tutor_follow'), null, [
-            'maxfiles' => 0,
-            'maxbytes' => 0,
-            'context' => \context_system::instance(),
+        $mform->addElement('editor', 'description_editor', get_string('description', 'tool_tutor_follow'), null, [
+            'trusttext' => true,
+            'subdirs' => true,
+            'maxfiles' => 20,
+            'context' => \context_system::instance()
         ]);
-        $mform->setType('description', PARAM_RAW);
+        $mform->setType('description_editor', PARAM_RAW);
 
         $attributes = [
             'multiple' => true,
@@ -260,7 +307,7 @@ class report_teacher extends dynamic_form
 
         $mform->addRule('status', get_string('required'), 'required', null, 'client');
         $mform->addRule('title', get_string('required'), 'required', null, 'client');
-        $mform->addRule('description', get_string('required'), 'required', null, 'client');
+        $mform->addRule('description_editor', get_string('required'), 'required', null, 'client');
         $mform->addRule('title', get_string('required'), 'required', null, 'client');
         $mform->addRule('cc_email', get_string('required'), 'required', null, 'client');
         $mform->addRule('authorid', get_string('required'), 'required', null, 'client');
@@ -282,17 +329,21 @@ class report_teacher extends dynamic_form
     protected function save()
     {
         global $DB;
+
         $record = $this->to_stdclass();
         $record->lasupdated = time();
         if ($this->get_data()->id) {
             $record->id = $this->get_data()->id;
             $record->timecreated = $this->get_data()->timecreated;
             $DB->update_record('tool_tutor_follow_report', $record);
+            $itemid = $record->id;
         } else {
             unset($record->id);
             $record->timecreated = time();
-            $DB->insert_record('tool_tutor_follow_report', $record);
+            $itemid = $DB->insert_record('tool_tutor_follow_report', $record);
         }
+
+        return $itemid;
     }
 
     /**

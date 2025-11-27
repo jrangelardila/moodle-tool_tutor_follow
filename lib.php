@@ -30,6 +30,40 @@ use tool_tutor_follow\local\report_teacher;
 use tool_tutor_follow\task\data_user_tutor;
 
 /**
+ * Return localfile
+ *
+ * @param $course
+ * @param $cm
+ * @param $context
+ * @param $filearea
+ * @param $args
+ * @param $forcedownload
+ * @param array $options
+ * @return false|void
+ * @throws coding_exception
+ */
+function tool_tutor_follow_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options = [])
+{
+    if ($context->contextlevel !== CONTEXT_SYSTEM) {
+        return false;
+    }
+
+    $itemid = array_shift($args);
+
+    $filename = array_pop($args);
+    $filepath = '/' . (empty($args) ? '' : implode('/', $args) . '/');
+
+    $fs = get_file_storage();
+    $file = $fs->get_file($context->id, 'tool_tutor_follow', $filearea, $itemid, $filepath, $filename);
+
+    if (!$file) {
+        return false;
+    }
+    send_stored_file($file, 0, 0, $forcedownload, $options);
+}
+
+
+/**
  * Return navbar
  *
  * @param $OUTPUT
@@ -362,11 +396,25 @@ function tool_tutor_follow_option3()
             : "";
 
         $url = new moodle_url('user/profile.php', ['id' => $record->authorid]);
+        $url_report = new moodle_url('/admin/tool/tutor_follow/index.php',
+            ['i' => optional_param('i', 3, PARAM_INT),
+                'reportid' => $record->id,
+            ]);
+
+        $context = context_system::instance();
+        $description = file_rewrite_pluginfile_urls(
+            $record->description,
+            'pluginfile.php',
+            $context->id,
+            'tool_tutor_follow',
+            'description',
+            $record->id
+        );
         $row = [
-            $record->status,
+        $record->status,
             "<a href='{$url}' target='_blank'>" . fullname($DB->get_record('user', ['id' => $record->authorid])) . "</a>",
             $record->title,
-            shorten_text($record->description, 120),
+            shorten_text($description, 120),
             $record->cc_email,
             $record->cco_email,
             $timecreated,
@@ -379,6 +427,9 @@ function tool_tutor_follow_option3()
         <button type="button" data-id="' . $record->id . '" class="btn btn-danger btn-sm delete-report" style="padding: 4px 8px;">
             <i class="fas fa-trash"></i>
         </button>
+        <a href="' . $url_report . '" data-id="' . $record->id . '" class="btn btn-info btn-sm view-report" style="padding: 4px 8px;">
+    <i class="fas fa-eye"></i>
+</a>
     </div>´ '
         ];
 

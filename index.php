@@ -75,7 +75,12 @@ switch ($option) {
         tool_tutor_follow_option2();
         break;
     case 3:
-        tool_tutor_follow_option3();
+        if(optional_param("reportid",null,PARAM_TEXT)){
+
+        }else{
+            tool_tutor_follow_option3();
+        }
+
         break;
     case 4:
         tool_tutor_follow_option4();
