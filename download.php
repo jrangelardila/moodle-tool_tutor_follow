@@ -23,15 +23,16 @@
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$functions = [
-    'tool_tutor_follow_get_data_course_for_user' => [
-        'classname' => 'tool_tutor_follow\external\get_external_api',
-        'methodname' => 'get_data_courses',
-        'description' => get_string('get_data_course_for_user_desc', 'tool_tutor_follow'),
-        'type' => 'write',
-        'ajax' => true,
-        'classpath' => 'admin/tool/tutor_follow/classes/external/get_external_api.php',
-        'capabilities' => 'tool/tutor_follow:view'
-    ]
-];
+require_once(__DIR__ . '/../../../config.php');
+require_once(__DIR__ . '/lib.php');
+
+$shortname = required_param('shortname', PARAM_ALPHANUMEXT);
+require_login();
+
+$classname = "\\tool_tutor_follow\\report\\" . $shortname;
+if (class_exists($classname)) {
+    $data = $classname::download_report($shortname);
+} else {
+    throw new \moodle_exception('error_class_not_found', 'tool_tutor_follow', '', $classname);
+}
 

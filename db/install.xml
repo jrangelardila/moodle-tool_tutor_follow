@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="admin/tool/tutor_follow/db" VERSION="20251108" COMMENT="XMLDB file for Moodle admin/tool/tutor_follow"
+<XMLDB PATH="admin/tool/tutor_follow/db" VERSION="20260213" COMMENT="XMLDB file for Moodle admin/tool/tutor_follow"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../../lib/xmldb/xmldb.xsd"
 >
@@ -27,23 +27,6 @@
         <FIELD NAME="cco_email" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="Time when its created the report"/>
         <FIELD NAME="lasupdated" TYPE="int" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="Time of the last updated the report"/>
-      </FIELDS>
-      <KEYS>
-        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
-      </KEYS>
-    </TABLE>
-    <TABLE NAME="tool_tutor_follow_issue" COMMENT="This table save data for the issues">
-      <FIELDS>
-        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
-        <FIELD NAME="reportid" TYPE="int" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="This is id of the tool_tutor_follow_report"/>
-        <FIELD NAME="reportorder" TYPE="int" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="This is the order of the report, with its issues"/>
-        <FIELD NAME="teacherid" TYPE="int" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="Id of the teacher"/>
-        <FIELD NAME="status" TYPE="int" LENGTH="20" NOTNULL="false" DEFAULT="0" SEQUENCE="false" COMMENT="Issue status"/>
-        <FIELD NAME="moduleid" TYPE="int" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="This id is of the course_modules, is affected.  This field can its null, its nor required course_module."/>
-        <FIELD NAME="issue" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Description for the searched news."/>
-        <FIELD NAME="attach" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Data of the plataform"/>
-        <FIELD NAME="timecreated" TYPE="int" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="Time of the issue created"/>
-        <FIELD NAME="lastupdate" TYPE="int" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="Las updated of the issue"/>
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>

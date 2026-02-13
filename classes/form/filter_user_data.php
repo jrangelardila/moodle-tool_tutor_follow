@@ -25,6 +25,8 @@
 
 namespace tool_tutor_follow\form;
 
+defined('MOODLE_INTERNAL') || die();
+
 use cache;
 use core_course_category;
 

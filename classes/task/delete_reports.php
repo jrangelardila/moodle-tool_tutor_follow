@@ -23,20 +23,40 @@
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace tool_tutor_follow\privacy;
+namespace tool_tutor_follow\task;
 
-defined('MOODLE_INTERNAL') || die();
-
-use core_privacy\local\metadata\null_provider;
-
-class provider implements null_provider
+class delete_reports extends \core\task\scheduled_task
 {
 
     /**
-     * @inheritDoc
+     * @return \lang_string|string
+     * @throws \coding_exception
      */
-    public static function get_reason(): string
+    public function get_name()
     {
-        return 'privacy:metadata';
+        return get_string("delete_reports", "tool_tutor_follow");
     }
+
+    /**
+     * Delete reports
+     *
+     * @return void
+     * @throws \dml_exception
+     */
+    public function execute() {
+        global $DB;
+
+        $dayslimit = get_config('tool_tutor_follow', 'reports_days_label');
+        $dayslimit = ($dayslimit !== false && $dayslimit !== '') ? (int)$dayslimit : 8;
+
+        $timelimit = time() - ($dayslimit * DAYSECS);
+        $DB->delete_records_select(
+            'tool_tutor_follow_report',
+            'lasupdated < :timelimit',
+            ['timelimit' => $timelimit]
+        );
+        mtrace("Cleanup: Removing records where lasupdated is older than " . $dayslimit . " days.");
+        mtrace("Threshold date: " . userdate($timelimit));
+    }
+
 }

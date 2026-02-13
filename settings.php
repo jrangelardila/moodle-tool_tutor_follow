@@ -35,4 +35,32 @@ if ($hassiteconfig) {
         new moodle_url('/admin/tool/tutor_follow/index.php'),
         'tool/tutor_follow:view'
     ));
+
+    //Settigs page
+    $settings = new admin_settingpage('tool_tutor_follow_settings', get_string('settings_page', 'tool_tutor_follow'));
+    //days for save data in reports
+    $settings->add(new admin_setting_configtext(
+        'tool_tutor_follow/reports_days',
+        get_string('reports_days_label', 'tool_tutor_follow'),
+        get_string('reports_days_desc', 'tool_tutor_follow'),
+        21,
+        PARAM_INT
+    ));
+    // days limit desconnection for report
+    $settings->add(new admin_setting_configtext(
+        'tool_tutor_follow/days_limit',
+        get_string('dayslimit_label', 'tool_tutor_follow'),
+        get_string('dayslimit_desc', 'tool_tutor_follow'),
+        8,
+        PARAM_INT
+    ));
+    // Limit in days for grading teacher
+    $settings->add(new admin_setting_configtext(
+        'tool_tutor_follow/days_limit_grading',
+        get_string('daysgrading_label', 'tool_tutor_follow'),
+        get_string('daysgrading_desc', 'tool_tutor_follow'),
+        8,
+        PARAM_INT
+    ));
+    $ADMIN->add('users', $settings);
 }

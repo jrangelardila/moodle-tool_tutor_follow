@@ -1,0 +1,152 @@
+{{!
+	This file is part of Moodle - http://moodle.org/
+
+	Moodle is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	Moodle is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+<div class="report-container border rounded shadow-sm overflow-hidden mb-4">
+
+    <!-- Encabezado Neutral (Gris claro) -->
+    <div class="p-4 border-bottom bg-light">
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <a href="{{author.profileurl}}" class="d-block border rounded-circle overflow-hidden shadow-sm hover-opacity-link">
+                    {{{author.avatar}}}
+                </a>
+            </div>
+            <div class="col">
+                <h2 class="h4 mb-1 text-dark font-weight-bold">{{title}}</h2>
+                <p class="mb-0 text-muted small text-uppercase">
+                    {{str_report}} #{{id}} | {{str_author}}:
+                    <a href="{{author.profileurl}}" class="text-secondary font-weight-bold">{{author.fullname}}</a>
+                </p>
+            </div>
+            <div class="col-auto">
+                <span class="badge badge-dark p-2 px-3">
+                    {{str_status}}: {{status}}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cuerpo del Reporte -->
+    <div class="p-4">
+        <!-- Sección de Descripción y Archivos (Pluginfile) -->
+        <div class="mb-5">
+            <h6 class="text-muted small font-weight-bold mb-3 border-bottom pb-2">
+                <i class="fas fa-align-left mr-1"></i> {{str_description}}
+            </h6>
+            <div class="p-3  border-left border-secondary rounded-right shadow-xs">
+                {{{description}}}
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Sección CC con Nombres Completos -->
+            <div class="col-md-6 mb-4">
+                <h6 class="text-muted small font-weight-bold mb-3">
+                    <i class="fas fa-users mr-1"></i> {{#str}} cc, tool_tutor_follow {{/str}}
+                </h6>
+                <div class="d-flex flex-wrap align-items-start">
+                    {{#cc_users}}
+                    <div class="user-profile-box text-center mr-4 mb-4" style="width: 100px;">
+                        <a href="{{profileurl}}" class="d-block text-decoration-none transition-item">
+                            <div class="avatar-large-container mb-2">
+                                {{{avatar}}}
+                            </div>
+                            <span class="small font-weight-bold d-block text-secondary user-fullname">
+                                {{fullname}}
+                            </span>
+                        </a>
+                    </div>
+                    {{/cc_users}}
+                    {{^cc_users}}
+                        <span class="text-muted italic small border p-2 rounded bg-light w-100">{{str_no_users}}</span>
+                    {{/cc_users}}
+                </div>
+            </div>
+
+            <!-- Sección CCO con Nombres Completos -->
+            <div class="col-md-6 mb-4">
+                <h6 class="text-muted small font-weight-bold mb-3">
+                    <i class="fas fa-user-shield mr-1"></i> {{#str}} cco, tool_tutor_follow {{/str}}
+                </h6>
+                <div class="d-flex flex-wrap align-items-start">
+                    {{#cco_users}}
+                    <div class="user-profile-box text-center mr-4 mb-4" style="width: 100px;">
+                        <a href="{{profileurl}}" class="d-block text-decoration-none transition-item">
+                            <div class="avatar-large-container mb-2">
+                                {{{avatar}}}
+                            </div>
+                            <span class="small font-weight-bold d-block text-secondary user-fullname">
+                                {{fullname}}
+                            </span>
+                        </a>
+                    </div>
+                    {{/cco_users}}
+                    {{^cco_users}}
+                        <span class="text-muted italic small border p-2 rounded bg-light w-100">{{str_no_users}}</span>
+                    {{/cco_users}}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer con fechas traducidas -->
+    <div class="p-3 bg-light border-top d-flex justify-content-between text-muted" style="font-size: 0.8rem;">
+        <span><i class="far fa-calendar-plus mr-1"></i> {{str_created}}: {{timecreated}}</span>
+        <span><i class="fas fa-sync-alt mr-1"></i> {{str_lastupdated}}: {{lastupdated}}</span>
+    </div>
+</div>
+
+<style>
+/* Contenedor principal y links */
+.report-container a:hover { text-decoration: none !important; }
+.hover-opacity-link:hover { opacity: 0.8; }
+
+/* Efecto de elevación en usuarios */
+.transition-item { transition: transform 0.2s ease-in-out; }
+.transition-item:hover { transform: translateY(-5px); }
+.transition-item:hover .user-fullname { color: #000 !important; }
+
+/* Forzar tamaño de avatar y visualización completa del nombre */
+.avatar-large-container img.userpicture {
+    width: 80px !important;
+    height: 80px !important;
+    border-radius: 8px !important; /* Cuadrado con bordes suaves */
+    object-fit: cover;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    border: 2px solid #dee2e6;
+}
+
+.user-fullname {
+    line-height: 1.2;
+    word-wrap: break-word;
+    white-space: normal; /* Permite saltos de línea para nombres largos */
+}
+
+/* Manejo de imágenes de @@PLUGINFILE@@ en la descripción */
+.report-container .shadow-xs img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    margin: 15px 0;
+    display: block;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.07);
+}
+
+.shadow-xs { box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); }
+
+/* Quitar colores de enlace predeterminados de Moodle */
+.text-secondary { color: #6c757d !important; }
+</style>

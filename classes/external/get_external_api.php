@@ -34,7 +34,7 @@ use core_external\external_api;
 
 use stdClass;
 
-
+defined('MOODLE_INTERNAL') || die();
 class get_external_api extends external_api
 {
 

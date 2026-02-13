@@ -40,7 +40,7 @@ class report_teacher extends dynamic_form
     /**
      * @var mixed|string
      */
-    private mixed $type;
+    public mixed $type;
 
     /**
      * Types de forms
@@ -50,7 +50,7 @@ class report_teacher extends dynamic_form
         'edit' => 2,
         'delete' => 3,
     ];
-    private array $statusoptions;
+    public array $statusoptions;
     //Elements for the db table
     private $id;
     private $status;

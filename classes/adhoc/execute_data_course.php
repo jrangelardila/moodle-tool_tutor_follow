@@ -30,6 +30,8 @@ require_once($CFG->libdir . '/gradelib.php');
 require_once(__DIR__ . "/../../lib.php");
 require_once($CFG->libdir . '/filelib.php');
 
+defined('MOODLE_INTERNAL') || die();
+
 use context_module;
 use core\task\adhoc_task;
 use grade_item;

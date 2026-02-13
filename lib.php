@@ -292,12 +292,20 @@ function tool_tutor_follow_save_data_json($content, $name_file, $area)
     }
 
     $fs->create_file_from_string($file_record, $filecontent);
-
 }
 
 function tool_tutor_follow_option2()
 {
-
+    $form = new \tool_tutor_follow\form\send_report_weekly(
+        action: new moodle_url('/admin/tool/tutor_follow/index.php', ['i' => 2])
+    );
+    if ($data = $form->get_data()) {
+        $form->create_adhocs_notified(
+            weekstart: $data->week,
+            weekend: strtotime('+6 days 23:59:59', $data->week),
+        );
+    }
+    $form->display();
 }
 
 /**
@@ -350,7 +358,12 @@ function tool_tutor_follow_option3()
     $table->no_sorting('description');
     $table->setup();
 
-    $records = array_values($DB->get_records('tool_tutor_follow_report'));
+    $report_teacher = new \tool_tutor_follow\form\filter_reports(
+        action: new moodle_url("/admin/tool/tutor_follow/index.php", ['i' => 3])
+    );
+    $report_teacher->display();
+
+    $records = $report_teacher->get_reports_filter();
     $sortcols = $table->get_sort_columns();
 
     if (!empty($sortcols)) {
@@ -383,6 +396,7 @@ function tool_tutor_follow_option3()
         }
     }
 
+
     foreach ($records as $record) {
         $timecreated = !empty($record->timecreated) ? userdate($record->timecreated) : '-';
         $lasupdated = !empty($record->lasupdated) ? userdate($record->lasupdated) : '-';
@@ -395,11 +409,14 @@ function tool_tutor_follow_option3()
             ? tool_tutor_follow_get_listusers($record->cco_email)
             : "";
 
-        $url = new moodle_url('user/profile.php', ['id' => $record->authorid]);
-        $url_report = new moodle_url('/admin/tool/tutor_follow/index.php',
-            ['i' => optional_param('i', 3, PARAM_INT),
+        $url = new moodle_url('/user/profile.php', ['id' => $record->authorid]);
+        $url_report = new moodle_url(
+            '/admin/tool/tutor_follow/index.php',
+            [
+                'i' => optional_param('i', 3, PARAM_INT),
                 'reportid' => $record->id,
-            ]);
+            ]
+        );
 
         $context = context_system::instance();
         $description = file_rewrite_pluginfile_urls(
@@ -410,8 +427,9 @@ function tool_tutor_follow_option3()
             'description',
             $record->id
         );
+
         $row = [
-        $record->status,
+            $report_teacher->statusoptions[$record->status],
             "<a href='{$url}' target='_blank'>" . fullname($DB->get_record('user', ['id' => $record->authorid])) . "</a>",
             $record->title,
             shorten_text($description, 120),
@@ -453,7 +471,8 @@ function tool_tutor_follow_get_listusers($list)
     global $DB;
     $ccids = array_filter(array_map('intval', explode(',', $list)));
     $users = $DB->get_records_list('user', 'id', $ccids, '', 'id,firstname, lastname, email');
-    return implode(', ',
+    return implode(
+        ', ',
         array_map(function ($u) {
             $url = new moodle_url('/user/profile.php', ['id' => $u->id]);
             return "<a href='$url' target='_blank'>" . fullname($u) . " " . $u->email . "</a>";
@@ -488,7 +507,6 @@ function tool_tutor_follow_get_data($name_file, $area)
     } else {
         return null;
     }
-
 }
 
 /**
@@ -688,7 +706,8 @@ function tool_tutor_follow_details_table_course($courseid, $endtime)
         }
     }
 
-    echo html_writer::tag("p",
+    echo html_writer::tag(
+        "p",
         get_string('lastupdate', 'tool_tutor_follow') . ": <b class='text-danger'>"
         . userdate($info->timemodified, get_string('strftimedaydatetime', 'langconfig')) . "</b>"
     );
@@ -704,11 +723,19 @@ function tool_tutor_follow_details_table_course($courseid, $endtime)
     $chart->set_title(get_string('generalfeatures', 'tool_tutor_follow'));
     $chart->set_horizontal(true);
 
-    $series = new chart_series($info->course->shortname . " - "
+    $series = new chart_series(
+        $info->course->shortname . " - "
         . $info->course->fullname,
-        [$info->course->total_assign, $info->course->total_forum, $info->course->students,
-            $info->course->total_assignments, $info->course->total_posts,
-            $info->course->total_grades, $info->course->total_pending_grades]);
+        [
+            $info->course->total_assign,
+            $info->course->total_forum,
+            $info->course->students,
+            $info->course->total_assignments,
+            $info->course->total_posts,
+            $info->course->total_grades,
+            $info->course->total_pending_grades
+        ]
+    );
 
     $chart->add_series($series);
 
@@ -785,8 +812,10 @@ function tool_tutor_follow_details_table_course($courseid, $endtime)
 </div>";
         }
         $promedio = ($count_access != 0) ? (round($minutes / $count_access, 1)) : 0;
-        $series = new chart_series($teacher->firstname . " " . $teacher->lastname,
-            [$count_access, $minutes, $promedio]);
+        $series = new chart_series(
+            $teacher->firstname . " " . $teacher->lastname,
+            [$count_access, $minutes, $promedio]
+        );
 
         $chart->add_series($series);
     }
