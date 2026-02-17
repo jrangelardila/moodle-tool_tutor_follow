@@ -29,6 +29,6 @@ $plugin->dependencies = [
     'block_dedication' => 2023112001
 ];
 $plugin->release = '0.1.2';
-$plugin->version = 2026021300;
+$plugin->version = 2026021700;
 $plugin->requires = 2021051700;
 $plugin->maturity = MATURITY_STABLE;

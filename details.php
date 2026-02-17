@@ -59,7 +59,8 @@ echo html_writer::tag('h2', get_string('hi', 'tool_tutor_follow') . fullname($US
 
 tool_tutor_follow_print_bar($OUTPUT, 1, [
     get_string('grades', 'tool_tutor_follow'),
-    get_string('globalnews', 'tool_tutor_follow'),
+    get_string('send_reports', 'tool_tutor_follow'),
+    get_string('reports', 'tool_tutor_follow'),
     get_string('studentsdistribution', 'tool_tutor_follow'),
     get_string('settings', 'tool_tutor_follow'),
 ]);

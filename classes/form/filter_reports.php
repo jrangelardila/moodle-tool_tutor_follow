@@ -24,6 +24,7 @@
 
 namespace tool_tutor_follow\form;
 
+use cache;
 use moodleform;
 
 defined('MOODLE_INTERNAL') || die();
@@ -50,6 +51,7 @@ class filter_reports extends moodleform
     protected function definition()
     {
         $mform = $this->_form;
+        $filters_cache = cache::make('tool_tutor_follow', 'form_cache');
 
         $options = [
             "" => get_string("all", 'moodle'),
@@ -74,6 +76,13 @@ class filter_reports extends moodleform
         $mform->setDefault('authorid', 0);
         $mform->setType('authorid', PARAM_INT);
 
+        if ($filters_cache->get("status")) {
+            $mform->setDefault('status', $filters_cache->get("status"));
+        }
+        if ($filters_cache->get("authorid")) {
+            $mform->setDefault('authorid', $filters_cache->get("authorid"));
+        }
+
         $this->add_action_buttons(false, get_string('savechanges'));
     }
 
@@ -84,29 +93,130 @@ class filter_reports extends moodleform
      * @throws \coding_exception
      * @throws \dml_exception
      */
-    public function get_reports_filter()
+    public function get_reports_filter(
+        int    $offset = 0,
+        int    $limit = 20,
+        string $sort = 'timecreated',
+        string $dir = 'DESC'
+    )
     {
-        global $DB;
-        if ($this->get_data()->status || $this->get_data()->authorid) {
-            global $DB;
+        global $DB, $USER;
 
-            $where = [];
-            $params = [];
-            if (isset($this->get_data()->status) && $this->get_data()->status !== '') {
-                $where[] = "status = :status";
-                $params['status'] = $this->get_data()->status;
+        $where = [];
+        $params = [];
+
+        $filters_cache = cache::make('tool_tutor_follow', 'form_cache');
+        if ($this->is_submitted()) {
+            $filters_cache->set('status', $this->get_data()->status);
+            $filters_cache->set('authorid', $this->get_data()->authorid);
+            $data = $this->get_data();
+        } else {
+            $data = new \stdClass();
+            if ($filters_cache->get("status")) {
+                $data->status = $filters_cache->get("status");
             }
-            $authors = array_filter($this->get_data()->authorid);
-            if (!empty($authors)) {
-                list($insql, $inparams) = $DB->get_in_or_equal($authors, SQL_PARAMS_NAMED, 'auth');
+            if ($filters_cache->get("authorid")) {
+                $data->authorid = $filters_cache->get("authorid");
+            }
+        }
+
+        if (isset($data->status) && $data->status !== '') {
+            $where[] = "status = :status";
+            $params['status'] = $data->status;
+        }
+
+        if (!empty($data->authorid)) {
+            $authors = array_filter((array)$data->authorid);
+
+            if ($authors) {
+                list($insql, $inparams) = $DB->get_in_or_equal(
+                    $authors,
+                    SQL_PARAMS_NAMED,
+                    'auth'
+                );
                 $where[] = "authorid $insql";
                 $params = array_merge($params, $inparams);
             }
-            $select = !empty($where) ? implode(" AND ", $where) : "1=1";
-
-            return array_values($DB->get_records_select('tool_tutor_follow_report', $select, $params, 'id ASC'));
-        } else {
-            return array_values($DB->get_records('tool_tutor_follow_report'));
         }
+
+        $select = $where ? implode(' AND ', $where) : '1=1';
+
+        $allowedcols = [
+            'status',
+            'authorid',
+            'title',
+            'timecreated',
+            'lasupdated'
+        ];
+
+        if (!in_array($sort, $allowedcols, true)) {
+            $sort = 'timecreated';
+        }
+
+        $dir = ($dir === 'ASC') ? 'ASC' : 'DESC';
+
+        $sql = "
+        SELECT *
+          FROM {tool_tutor_follow_report}
+         WHERE $select
+         ORDER BY $sort $dir
+    ";
+
+        return $DB->get_records_sql($sql, $params, $offset, $limit);
+    }
+
+    /**
+     * Total records
+     *
+     * @return int
+     * @throws \coding_exception
+     * @throws \dml_exception
+     */
+    public function count_reports_filter(): int
+    {
+        global $DB;
+
+        $where = [];
+        $params = [];
+        $filters_cache = cache::make('tool_tutor_follow', 'form_cache');
+        if ($this->is_submitted()) {
+            $filters_cache->set('status', $this->get_data()->status);
+            $filters_cache->set('authorid', $this->get_data()->authorid);
+            $data = $this->get_data();
+        } else {
+            $data = new \stdClass();
+            if ($filters_cache->get("status")) {
+                $data->status = $filters_cache->get("status");
+            }
+            if ($filters_cache->get("authorid")) {
+                $data->authorid = $filters_cache->get("authorid");
+            }
+        }
+
+        if (isset($data->status) && $data->status !== '') {
+            $where[] = "status = :status";
+            $params['status'] = $data->status;
+        }
+
+        if (!empty($data->authorid)) {
+            $authors = array_filter($data->authorid);
+            if (!empty($authors)) {
+                list($insql, $inparams) = $DB->get_in_or_equal(
+                    $authors,
+                    SQL_PARAMS_NAMED,
+                    'auth'
+                );
+                $where[] = "authorid $insql";
+                $params = array_merge($params, $inparams);
+            }
+        }
+
+        $select = $where ? implode(' AND ', $where) : '1=1';
+
+        return $DB->count_records_select(
+            'tool_tutor_follow_report',
+            $select,
+            $params
+        );
     }
 }

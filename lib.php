@@ -134,7 +134,6 @@ function tool_tutor_follow_print_data($data)
     if ($filters = $form->get_data()) {
         $filters_cache->set("filter_users", $filters->user);
         $filters_cache->set("filter_category", $filters->category);
-
         foreach ($data->users as $value) {
             foreach ($value->cursos as $curso) {
                 $userFilterSize = sizeof($filters->user);
@@ -142,10 +141,8 @@ function tool_tutor_follow_print_data($data)
                 $userFilterActive = $userFilterSize > 0;
                 $categoryFilterActive = $categoryFilterSize > 0;
                 if (
-                    ($userFilterActive && $categoryFilterActive &&
-                        (!in_array($value->id, $filters->user) || !in_array($curso->category, $filters->category))) || // Ambos activos, pero falla uno
-                    ($userFilterActive && !in_array($value->id, $filters->user)) || // Solo filtro usuario activo
-                    ($categoryFilterActive && !in_array($curso->category, $filters->category)) // Solo filtro categoría activo
+                    ($userFilterActive && !in_array($value->id, $filters->user)) ||
+                    ($categoryFilterActive && !in_array($curso->category, $filters->category))
                 ) {
                     continue;
                 }
@@ -314,18 +311,23 @@ function tool_tutor_follow_option2()
  * @return void
  * @throws moodle_exception
  */
-function tool_tutor_follow_option3()
-{
+function tool_tutor_follow_option3() {
     global $OUTPUT, $CFG, $DB;
+
     require_once($CFG->libdir . '/tablelib.php');
 
+    $page     = optional_param('page', 0, PARAM_INT);
+    $perpage  = 20;
+    $offset   = $page * $perpage;
     $baseurl = new moodle_url('/admin/tool/tutor_follow/index.php', [
-        'i' => optional_param('i', 0, PARAM_INT)
+        'i'    => optional_param('i', 0, PARAM_INT),
+        'page' => $page
     ]);
 
     $table = new flexible_table('tool_tutor_follow_report_table');
     $table->define_baseurl($baseurl);
-    $table->set_attribute('style', 'position:absolute; background:white;');
+    $table->set_attribute('class', 'generaltable generalbox');
+
     $columns = [
         'status',
         'authorid',
@@ -352,71 +354,55 @@ function tool_tutor_follow_option3()
     $table->define_headers($headers);
 
     $table->sortable(true, 'timecreated', SORT_DESC);
-    $table->collapsible(true);
-    $table->set_attribute('class', 'generaltable generalbox');
-
     $table->no_sorting('description');
+    $table->collapsible(true);
     $table->setup();
 
     $report_teacher = new \tool_tutor_follow\form\filter_reports(
-        action: new moodle_url("/admin/tool/tutor_follow/index.php", ['i' => 3])
+        action: new moodle_url('/admin/tool/tutor_follow/index.php', ['i' => 3])
     );
     $report_teacher->display();
 
-    $records = $report_teacher->get_reports_filter();
     $sortcols = $table->get_sort_columns();
+    $sort = key($sortcols) ?? 'timecreated';
+    $dir  = current($sortcols) === SORT_ASC ? 'ASC' : 'DESC';
 
-    if (!empty($sortcols)) {
-        reset($sortcols);
-        $primarycol = key($sortcols);
-        $direction = current($sortcols);
-        if (in_array($primarycol, $columns)) {
-            usort($records, function ($a, $b) use ($primarycol, $direction) {
-                $valA = isset($a->{$primarycol}) ? $a->{$primarycol} : null;
-                $valB = isset($b->{$primarycol}) ? $b->{$primarycol} : null;
-                if (is_numeric($valA) && is_numeric($valB)) {
-                    $cmp = ($valA < $valB) ? -1 : (($valA > $valB) ? 1 : 0);
-                } else {
-                    $cmp = strcasecmp((string)$valA, (string)$valB);
-                    if ($cmp < 0) {
-                        $cmp = -1;
-                    } elseif ($cmp > 0) {
-                        $cmp = 1;
-                    } else {
-                        $cmp = 0;
-                    }
-                }
+    $records = $report_teacher->get_reports_filter(
+        $offset,
+        $perpage,
+        $sort,
+        $dir
+    );
+    $total   = $report_teacher->count_reports_filter();
 
-                if ($direction === SORT_ASC) {
-                    return $cmp;
-                } else {
-                    return -$cmp;
-                }
-            });
-        }
-    }
-
+    $table->pagesize($perpage, $total);
 
     foreach ($records as $record) {
-        $timecreated = !empty($record->timecreated) ? userdate($record->timecreated) : '-';
-        $lasupdated = !empty($record->lasupdated) ? userdate($record->lasupdated) : '-';
+
+        $timecreated = !empty($record->timecreated)
+            ? userdate($record->timecreated)
+            : '-';
+
+        $lasupdated = !empty($record->lasupdated)
+            ? userdate($record->lasupdated)
+            : '-';
 
         $record->cc_email = !empty($record->cc_email)
             ? tool_tutor_follow_get_listusers($record->cc_email)
-            : "";
+            : '';
 
         $record->cco_email = !empty($record->cco_email)
             ? tool_tutor_follow_get_listusers($record->cco_email)
-            : "";
+            : '';
 
-        $url = new moodle_url('/user/profile.php', ['id' => $record->authorid]);
-        $url_report = new moodle_url(
-            '/admin/tool/tutor_follow/index.php',
-            [
-                'i' => optional_param('i', 3, PARAM_INT),
-                'reportid' => $record->id,
-            ]
-        );
+        $profileurl = new moodle_url('/user/profile.php', [
+            'id' => $record->authorid
+        ]);
+
+        $reporturl = new moodle_url('/admin/tool/tutor_follow/index.php', [
+            'i'        => optional_param('i', 3, PARAM_INT),
+            'reportid' => $record->id
+        ]);
 
         $context = context_system::instance();
         $description = file_rewrite_pluginfile_urls(
@@ -428,9 +414,11 @@ function tool_tutor_follow_option3()
             $record->id
         );
 
+        $author = fullname($DB->get_record('user', ['id' => $record->authorid]));
+
         $row = [
             $report_teacher->statusoptions[$record->status],
-            "<a href='{$url}' target='_blank'>" . fullname($DB->get_record('user', ['id' => $record->authorid])) . "</a>",
+            html_writer::link($profileurl, $author, ['target' => '_blank']),
             $record->title,
             shorten_text($description, 120),
             $record->cc_email,
@@ -438,21 +426,22 @@ function tool_tutor_follow_option3()
             $timecreated,
             $lasupdated,
             '
-    <div class="d-flex flex-column" style="gap:4px;">
-        <button type="button" data-id="' . $record->id . '" class="btn btn-secondary btn-sm edit-report" style="padding: 4px 8px;">
-            <i class="fas fa-pen"></i>
-        </button>
-        <button type="button" data-id="' . $record->id . '" class="btn btn-danger btn-sm delete-report" style="padding: 4px 8px;">
-            <i class="fas fa-trash"></i>
-        </button>
-        <a href="' . $url_report . '" data-id="' . $record->id . '" class="btn btn-info btn-sm view-report" style="padding: 4px 8px;">
-    <i class="fas fa-eye"></i>
-</a>
-    </div>´ '
+            <div class="d-flex flex-column" style="gap:4px;">
+                <button type="button" data-id="' . $record->id . '" class="btn btn-secondary btn-sm edit-report">
+                    <i class="fas fa-pen"></i>
+                </button>
+                <button type="button" data-id="' . $record->id . '" class="btn btn-danger btn-sm delete-report">
+                    <i class="fas fa-trash"></i>
+                </button>
+                <a href="' . $reporturl . '" class="btn btn-info btn-sm view-report">
+                    <i class="fas fa-eye"></i>
+                </a>
+            </div>'
         ];
 
         $table->add_data($row);
     }
+
     echo $OUTPUT->render_from_template('tool_tutor_follow/option3/table', []);
     $table->finish_output();
 }
