@@ -500,14 +500,19 @@ class list_overdue_activities extends report_base
                 ON ctx_module.contextlevel = 70 
                 AND ctx_module.instanceid = cm.id
             
-            -- Sin calificación (rating)
-            LEFT JOIN {rating} rt 
-                ON rt.contextid = ctx_module.id 
-                AND rt.itemid = p.id
+            -- Sin calificación (grade_book)
+           LEFT JOIN {grade_items} gi
+    ON gi.itemtype = 'mod'
+    AND gi.itemmodule = 'forum'
+    AND gi.iteminstance = f.id
+    AND gi.courseid = f.course
+
+LEFT JOIN {grade_grades} gg
+    ON gg.itemid = gi.id
+    AND gg.userid = u.id
             
             WHERE fd.forum {$forum_sql}
-                AND rt.id IS NULL
-            
+AND gg.id IS NULL            
             ORDER BY fd.forum, u.lastname, u.firstname
         ";
 
