@@ -496,10 +496,22 @@ class list_overdue_activities extends report_base
                 ON m.id = cm.module 
                 AND m.name = 'forum'
             
-            JOIN {context} ctx_module 
-                ON ctx_module.contextlevel = 70 
+            JOIN {context} ctx_module
+                ON ctx_module.contextlevel = 70
                 AND ctx_module.instanceid = cm.id
-            
+
+            JOIN {context} ctx_course
+                ON ctx_course.contextlevel = 50
+                AND ctx_course.instanceid = f.course
+
+            JOIN {role_assignments} ra
+                ON ra.userid = u.id
+                AND ra.contextid = ctx_course.id
+
+            JOIN {role} r
+                ON r.id = ra.roleid
+                AND r.shortname = 'student'
+
             -- Sin calificación (grade_book)
            LEFT JOIN {grade_items} gi
     ON gi.itemtype = 'mod'
