@@ -39,6 +39,11 @@ require_capability('tool/tutor_follow:view', context_system::instance());
 $PAGE->requires->jquery();
 $PAGE->requires->js_call_amd('tool_tutor_follow/div4', 'init');
 $PAGE->requires->js_call_amd('tool_tutor_follow/reports', 'add_report');
+$PAGE->requires->js_call_amd('tool_tutor_follow/select_reports', 'init');
+
+if ((int)optional_param('i', 1, PARAM_INT) === 3) {
+    $PAGE->requires->js_call_amd('tool_tutor_follow/hide_footer', 'init');
+}
 
 echo $OUTPUT->header();
 
@@ -75,6 +80,33 @@ switch ($option) {
         tool_tutor_follow_option2();
         break;
     case 3:
+        $bulkaction = optional_param('action', '', PARAM_ALPHA);
+        if (in_array($bulkaction, ['sendselected', 'deleteselected'], true) && confirm_sesskey()) {
+            $reportids = optional_param_array('reportids', [], PARAM_INT);
+            $reportids = array_filter(array_map('intval', $reportids));
+
+            if (!empty($reportids)) {
+                if ($bulkaction === 'sendselected') {
+                    $records = $DB->get_records_list('tool_tutor_follow_report', 'id', $reportids);
+                    $queued = 0;
+                    foreach ($records as $record) {
+                        $task = new \tool_tutor_follow\adhoc\send_report();
+                        $task->set_custom_data($record);
+                        \core\task\manager::queue_adhoc_task($task, true);
+                        $queued++;
+                    }
+                    \core\notification::success(get_string('adhocs_created_success', 'tool_tutor_follow', $queued));
+                } else {
+                    $DB->delete_records_list('tool_tutor_follow_report', 'id', $reportids);
+                    \core\notification::success(get_string('delete_reports_success', 'tool_tutor_follow', count($reportids)));
+                }
+            } else {
+                \core\notification::warning(get_string('select_reports_none_selected', 'tool_tutor_follow'));
+            }
+
+            redirect(new moodle_url('/admin/tool/tutor_follow/index.php', ['i' => 3]));
+        }
+
         if (optional_param("reportid", null, PARAM_TEXT)) {
             $report = new \tool_tutor_follow\report\report_base();
             $report->print_report(optional_param("reportid", null, PARAM_TEXT));

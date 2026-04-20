@@ -98,6 +98,7 @@ class desconection_time extends report_base
         $cc_config = get_config('tool_tutor_follow', 'cc_email_default');
         $cc_default = $cc_config ? implode(',', json_decode($cc_config)) : '';
         foreach ($usercourses as $userid => $courses) {
+            $first = reset($courses);
             $element = new \stdClass();
             $element->authorid = $userid;
             $element->title = get_string('title_report_desconection_time', 'tool_tutor_follow');
@@ -105,17 +106,7 @@ class desconection_time extends report_base
             $element->status = 0;
             $element->timecreated = time();
             $element->lasupdated = time();
-            $li_items = "";
-            foreach ($courses as $c) {
-                $days = ($c->lastaccess) ? floor((time() - $c->lastaccess) / DAYSECS) : get_string('never', 'core');
-                $a = new \stdClass();
-                $a->username = $c->firstname . ' ' . $c->lastname;
-                $a->coursename = $c->course_name;
-                $a->coursesummary = format_text($c->summary, FORMAT_HTML);
-                $a->days = $days;
-                $li_items .= "<li>" . get_string('disconnection_desc', 'tool_tutor_follow', $a) . "</li>";
-            }
-            $element->description = "<ul>" . $li_items . "</ul>";
+            $element->description = $this->build_description($first, $courses);
             $elements[] = $element;
         }
         if (!empty($elements)) {
@@ -127,6 +118,43 @@ class desconection_time extends report_base
             'report_desconection_time',
             'reports'
         );
+    }
+
+    /**
+     * Build HTML description with a table of courses the user has not accessed.
+     *
+     * @param \stdClass $user First row (used for user fullname).
+     * @param array $courses All rows for the user.
+     * @return string
+     * @throws \coding_exception
+     */
+    private function build_description($user, $courses)
+    {
+        $a = new \stdClass();
+        $a->username = $user->firstname . ' ' . $user->lastname;
+        $a->dayslimit = (int)get_config('tool_tutor_follow', 'days_limit');
+        $intro = '<p>' . get_string('disconnection_intro', 'tool_tutor_follow', $a) . '</p>';
+
+        $html = '<table style="border-collapse: collapse; width: 100%; border: 1px solid #ddd;">';
+        $html .= '<thead><tr style="background-color: #f2f2f2;">';
+        $html .= '<th style="border: 1px solid #ddd; padding: 8px;">' . get_string('coursename', 'tool_tutor_follow') . '</th>';
+        $html .= '<th style="border: 1px solid #ddd; padding: 8px;">' . get_string('course_shortname', 'tool_tutor_follow') . '</th>';
+        $html .= '<th style="border: 1px solid #ddd; padding: 8px;">' . get_string('days_without_access', 'tool_tutor_follow') . '</th>';
+        $html .= '<th style="border: 1px solid #ddd; padding: 8px;">' . get_string('course_summary', 'tool_tutor_follow') . '</th>';
+        $html .= '</tr></thead><tbody>';
+
+        foreach ($courses as $c) {
+            $days = ($c->lastaccess) ? floor((time() - $c->lastaccess) / DAYSECS) : get_string('never', 'core');
+            $html .= '<tr>';
+            $html .= '<td style="border: 1px solid #ddd; padding: 8px;">' . $c->course_name . '</td>';
+            $html .= '<td style="border: 1px solid #ddd; padding: 8px;">' . $c->course_shortname . '</td>';
+            $html .= '<td style="border: 1px solid #ddd; padding: 8px;">' . $days . '</td>';
+            $html .= '<td style="border: 1px solid #ddd; padding: 8px;">' . format_text($c->summary, FORMAT_HTML) . '</td>';
+            $html .= '</tr>';
+        }
+
+        $html .= '</tbody></table>';
+        return $intro . $html;
     }
 
     /**

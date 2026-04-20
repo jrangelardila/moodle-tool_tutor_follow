@@ -50,6 +50,8 @@ class filter_reports extends moodleform
      */
     protected function definition()
     {
+        global $DB;
+
         $mform = $this->_form;
         $filters_cache = cache::make('tool_tutor_follow', 'form_cache');
 
@@ -76,11 +78,27 @@ class filter_reports extends moodleform
         $mform->setDefault('authorid', 0);
         $mform->setType('authorid', PARAM_INT);
 
+        $titles = $DB->get_fieldset_sql(
+            "SELECT DISTINCT title
+               FROM {tool_tutor_follow_report}
+              WHERE title IS NOT NULL AND title <> ''
+           ORDER BY title ASC"
+        );
+        $titleoptions = array_combine($titles, $titles) ?: [];
+        $mform->addElement('autocomplete', 'title', get_string('title', 'tool_tutor_follow'), $titleoptions, [
+            'multiple' => true,
+            'noselectionstring' => get_string('choosedots'),
+        ]);
+        $mform->setType('title', PARAM_TEXT);
+
         if ($filters_cache->get("status")) {
             $mform->setDefault('status', $filters_cache->get("status"));
         }
         if ($filters_cache->get("authorid")) {
             $mform->setDefault('authorid', $filters_cache->get("authorid"));
+        }
+        if ($filters_cache->get("title")) {
+            $mform->setDefault('title', $filters_cache->get("title"));
         }
 
         $this->add_action_buttons(false, get_string('savechanges'));
@@ -102,44 +120,7 @@ class filter_reports extends moodleform
     {
         global $DB, $USER;
 
-        $where = [];
-        $params = [];
-
-        $filters_cache = cache::make('tool_tutor_follow', 'form_cache');
-        if ($this->is_submitted()) {
-            $filters_cache->set('status', $this->get_data()->status);
-            $filters_cache->set('authorid', $this->get_data()->authorid);
-            $data = $this->get_data();
-        } else {
-            $data = new \stdClass();
-            if ($filters_cache->get("status")) {
-                $data->status = $filters_cache->get("status");
-            }
-            if ($filters_cache->get("authorid")) {
-                $data->authorid = $filters_cache->get("authorid");
-            }
-        }
-
-        if (isset($data->status) && $data->status !== '') {
-            $where[] = "status = :status";
-            $params['status'] = $data->status;
-        }
-
-        if (!empty($data->authorid)) {
-            $authors = array_filter((array)$data->authorid);
-
-            if ($authors) {
-                list($insql, $inparams) = $DB->get_in_or_equal(
-                    $authors,
-                    SQL_PARAMS_NAMED,
-                    'auth'
-                );
-                $where[] = "authorid $insql";
-                $params = array_merge($params, $inparams);
-            }
-        }
-
-        $select = $where ? implode(' AND ', $where) : '1=1';
+        list($select, $params) = $this->build_filters();
 
         $allowedcols = [
             'status',
@@ -176,13 +157,29 @@ class filter_reports extends moodleform
     {
         global $DB;
 
+        list($select, $params) = $this->build_filters();
+
+        return $DB->count_records_select(
+            'tool_tutor_follow_report',
+            $select,
+            $params
+        );
+    }
+
+    private function build_filters(): array
+    {
+        global $DB;
+
         $where = [];
         $params = [];
+
         $filters_cache = cache::make('tool_tutor_follow', 'form_cache');
         if ($this->is_submitted()) {
-            $filters_cache->set('status', $this->get_data()->status);
-            $filters_cache->set('authorid', $this->get_data()->authorid);
-            $data = $this->get_data();
+            $submitted = $this->get_data();
+            $filters_cache->set('status', $submitted->status ?? '');
+            $filters_cache->set('authorid', $submitted->authorid ?? []);
+            $filters_cache->set('title', $submitted->title ?? []);
+            $data = $submitted;
         } else {
             $data = new \stdClass();
             if ($filters_cache->get("status")) {
@@ -190,6 +187,9 @@ class filter_reports extends moodleform
             }
             if ($filters_cache->get("authorid")) {
                 $data->authorid = $filters_cache->get("authorid");
+            }
+            if ($filters_cache->get("title")) {
+                $data->title = $filters_cache->get("title");
             }
         }
 
@@ -199,8 +199,8 @@ class filter_reports extends moodleform
         }
 
         if (!empty($data->authorid)) {
-            $authors = array_filter($data->authorid);
-            if (!empty($authors)) {
+            $authors = array_filter((array)$data->authorid);
+            if ($authors) {
                 list($insql, $inparams) = $DB->get_in_or_equal(
                     $authors,
                     SQL_PARAMS_NAMED,
@@ -211,12 +211,23 @@ class filter_reports extends moodleform
             }
         }
 
+        if (!empty($data->title)) {
+            $titles = array_filter((array)$data->title, function ($v) {
+                return $v !== '' && $v !== null;
+            });
+            if ($titles) {
+                list($insql, $inparams) = $DB->get_in_or_equal(
+                    $titles,
+                    SQL_PARAMS_NAMED,
+                    'title'
+                );
+                $where[] = "title $insql";
+                $params = array_merge($params, $inparams);
+            }
+        }
+
         $select = $where ? implode(' AND ', $where) : '1=1';
 
-        return $DB->count_records_select(
-            'tool_tutor_follow_report',
-            $select,
-            $params
-        );
+        return [$select, $params];
     }
 }

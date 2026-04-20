@@ -316,34 +316,50 @@ function tool_tutor_follow_option3() {
 
     require_once($CFG->libdir . '/tablelib.php');
 
-    $page     = optional_param('page', 0, PARAM_INT);
-    $perpage  = 20;
-    $offset   = $page * $perpage;
+    $page             = optional_param('page', 0, PARAM_INT);
+    $perpageoptions   = [10, 20, 50, 100, 200, 500];
+    $perpage          = optional_param('perpage', 20, PARAM_INT);
+    if (!in_array($perpage, $perpageoptions, true)) {
+        $perpage = 20;
+    }
+    $offset = $page * $perpage;
     $baseurl = new moodle_url('/admin/tool/tutor_follow/index.php', [
-        'i'    => optional_param('i', 0, PARAM_INT),
-        'page' => $page
+        'i'       => optional_param('i', 0, PARAM_INT),
+        'page'    => $page,
+        'perpage' => $perpage,
     ]);
 
     $table = new flexible_table('tool_tutor_follow_report_table');
     $table->define_baseurl($baseurl);
     $table->set_attribute('class', 'generaltable generalbox');
+    $table->set_attribute('style', 'position: absolute; background-color: white;');
 
     $columns = [
+        'selectreport',
         'status',
         'authorid',
         'title',
         'description',
+        'viewdescription',
         'cc_email',
         'cco_email',
         'timecreated',
         'lasupdated'
     ];
 
+    $masterheader = html_writer::empty_tag('input', [
+        'type'  => 'checkbox',
+        'class' => 'select-all-reports',
+        'title' => get_string('selectall'),
+    ]);
+
     $headers = [
+        $masterheader,
         get_string('status', 'tool_tutor_follow'),
         get_string('authorid', 'tool_tutor_follow'),
         get_string('title', 'tool_tutor_follow'),
         get_string('description', 'tool_tutor_follow'),
+        get_string('viewdescription', 'tool_tutor_follow'),
         get_string('cc_email', 'tool_tutor_follow'),
         get_string('cco_email', 'tool_tutor_follow'),
         get_string('timecreated', 'tool_tutor_follow'),
@@ -354,7 +370,9 @@ function tool_tutor_follow_option3() {
     $table->define_headers($headers);
 
     $table->sortable(true, 'timecreated', SORT_DESC);
+    $table->no_sorting('selectreport');
     $table->no_sorting('description');
+    $table->no_sorting('viewdescription');
     $table->collapsible(true);
     $table->setup();
 
@@ -362,6 +380,59 @@ function tool_tutor_follow_option3() {
         action: new moodle_url('/admin/tool/tutor_follow/index.php', ['i' => 3])
     );
     $report_teacher->display();
+
+    $perpageurl = new moodle_url('/admin/tool/tutor_follow/index.php', ['i' => 3]);
+    echo html_writer::start_tag('form', [
+        'method' => 'get',
+        'action' => $perpageurl->out(false),
+        'class'  => 'form-inline mb-3 d-flex justify-content-end align-items-center',
+    ]);
+    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'i', 'value' => 3]);
+    echo html_writer::tag('label', get_string('rowsperpage', 'tool_tutor_follow'), [
+        'for'   => 'tool-tutor-follow-perpage',
+        'class' => 'mr-2 mb-0',
+    ]);
+    $selectoptions = [];
+    foreach ($perpageoptions as $option) {
+        $selectoptions[$option] = $option;
+    }
+    echo html_writer::select($selectoptions, 'perpage', $perpage, false, [
+        'id'       => 'tool-tutor-follow-perpage',
+        'class'    => 'custom-select custom-select-sm',
+        'onchange' => 'this.form.submit();',
+    ]);
+    echo html_writer::end_tag('form');
+
+    $sendurl = new moodle_url('/admin/tool/tutor_follow/index.php', ['i' => 3]);
+    echo '<form method="post" action="' . $sendurl->out(false) . '" id="tool-tutor-follow-send-selected-form">';
+    echo '<input type="hidden" name="sesskey" value="' . sesskey() . '">';
+
+    echo html_writer::start_div('text-right mb-3');
+    echo html_writer::tag(
+        'button',
+        '<i class="fa fa-paper-plane mr-1"></i> ' . get_string('sendreport', 'tool_tutor_follow'),
+        [
+            'type'   => 'submit',
+            'name'   => 'action',
+            'value'  => 'sendselected',
+            'class'  => 'btn btn-primary mr-2',
+            'id'     => 'tool-tutor-follow-send-selected',
+            'style'  => 'display:none;',
+        ]
+    );
+    echo html_writer::tag(
+        'button',
+        '<i class="fa fa-trash mr-1"></i> ' . get_string('deletereports', 'tool_tutor_follow'),
+        [
+            'type'   => 'submit',
+            'name'   => 'action',
+            'value'  => 'deleteselected',
+            'class'  => 'btn btn-danger',
+            'id'     => 'tool-tutor-follow-delete-selected',
+            'style'  => 'display:none;',
+        ]
+    );
+    echo html_writer::end_div();
 
     $sortcols = $table->get_sort_columns();
     $sort = key($sortcols) ?? 'timecreated';
@@ -416,11 +487,32 @@ function tool_tutor_follow_option3() {
 
         $author = fullname($DB->get_record('user', ['id' => $record->authorid]));
 
+        $checkbox = html_writer::empty_tag('input', [
+            'type'  => 'checkbox',
+            'name'  => 'reportids[]',
+            'value' => $record->id,
+            'class' => 'select-report',
+        ]);
+
+        $viewdescbtn = html_writer::tag(
+            'button',
+            '<i class="fa fa-search-plus"></i>',
+            [
+                'type'             => 'button',
+                'class'            => 'btn btn-info btn-sm view-description-btn',
+                'data-title'       => $record->title,
+                'data-description' => $description,
+                'title'            => get_string('viewdescription', 'tool_tutor_follow'),
+            ]
+        );
+
         $row = [
+            $checkbox,
             $report_teacher->statusoptions[$record->status],
             html_writer::link($profileurl, $author, ['target' => '_blank']),
             $record->title,
             shorten_text($description, 120),
+            $viewdescbtn,
             $record->cc_email,
             $record->cco_email,
             $timecreated,
@@ -444,6 +536,47 @@ function tool_tutor_follow_option3() {
 
     echo $OUTPUT->render_from_template('tool_tutor_follow/option3/table', []);
     $table->finish_output();
+
+    echo '</form>';
+
+    echo '
+    <div id="tool-tutor-follow-desc-modal" style="display:none;position:fixed;inset:0;z-index:2147483646;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;">
+        <div style="background:#fff;max-width:90vw;max-height:85vh;width:900px;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,0.3);display:flex;flex-direction:column;overflow:hidden;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #dee2e6;background:#f8f9fa;">
+                <h4 id="tool-tutor-follow-desc-modal-title" style="margin:0;font-size:1.1rem;"></h4>
+                <button type="button" id="tool-tutor-follow-desc-modal-close" class="btn btn-sm btn-light" aria-label="Close" style="font-size:1.3rem;line-height:1;padding:2px 10px;">&times;</button>
+            </div>
+            <div id="tool-tutor-follow-desc-modal-body" style="padding:18px;overflow:auto;"></div>
+        </div>
+    </div>
+    <script>
+    (function() {
+        var modal = document.getElementById("tool-tutor-follow-desc-modal");
+        var titleEl = document.getElementById("tool-tutor-follow-desc-modal-title");
+        var bodyEl = document.getElementById("tool-tutor-follow-desc-modal-body");
+        var closeBtn = document.getElementById("tool-tutor-follow-desc-modal-close");
+        if (!modal) { return; }
+        var open = function(title, html) {
+            titleEl.textContent = title || "";
+            bodyEl.innerHTML = html || "";
+            modal.style.display = "flex";
+            document.body.style.overflow = "hidden";
+        };
+        var close = function() {
+            modal.style.display = "none";
+            document.body.style.overflow = "";
+        };
+        closeBtn.addEventListener("click", close);
+        modal.addEventListener("click", function(e) { if (e.target === modal) { close(); } });
+        document.addEventListener("keydown", function(e) { if (e.key === "Escape") { close(); } });
+        document.addEventListener("click", function(e) {
+            var btn = e.target.closest(".view-description-btn");
+            if (!btn) { return; }
+            e.preventDefault();
+            open(btn.getAttribute("data-title"), btn.getAttribute("data-description"));
+        });
+    })();
+    </script>';
 }
 
 

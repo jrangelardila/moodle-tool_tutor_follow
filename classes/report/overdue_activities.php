@@ -58,7 +58,7 @@ class overdue_activities extends report_base
         $cc_default = $cc_config ? implode(',', json_decode($cc_config)) : '';
 
         $data = [];
-        $records = [];
+        $grouped = [];
 
         $params = array_merge($category_params, $role_params);
         $params['daysago1'] = $days;
@@ -187,17 +187,7 @@ ORDER BY c.fullname, cs.section, a.name
             $class->url = (new \moodle_url('/mod/assign/view.php', ['id' => $row->moduleid]))->out(false);
 
             $data[] = $class;
-
-            $record = new \stdClass();
-            $record->status = 0;
-            $record->authorid = $row->tutorid;
-            $record->title = get_string('title_report_overdue_activities', 'tool_tutor_follow');
-            $record->description = get_string('overdue_activities_desc', 'tool_tutor_follow', $class);
-            $record->cc_email = $cc_default;
-            $record->timecreated = time();
-            $record->lasupdated = time();
-
-            $records[] = $record;
+            $this->append_to_course_group($grouped, $row->courseid, $row->tutorid, $class);
         }
 
         mtrace('Execute for forums (simplified version)...');
@@ -211,6 +201,7 @@ SELECT
     f.id             AS forumid,
     f.name           AS forumname,
     f.duedate        AS limitdate,
+    f.grade_forum,
     c.id             AS courseid,
     c.fullname       AS coursename,
     c.shortname,
@@ -289,15 +280,17 @@ ORDER BY c.fullname, cs.section, f.name
         WHERE gi.itemmodule = 'forum'
           AND gi.iteminstance = :forumid
           AND gi.courseid = :courseid3
+          AND gi.itemnumber = :itemnumber
           AND u.deleted = 0
           AND u.suspended = 0
           AND ue.status = 0
           AND e.status = 0
     ", [
-                'forumid' => $forum->forumid,
-                'courseid' => $forum->courseid,
-                'courseid2' => $forum->courseid,
-                'courseid3' => $forum->courseid,
+                'forumid'    => $forum->forumid,
+                'courseid'   => $forum->courseid,
+                'courseid2'  => $forum->courseid,
+                'courseid3'  => $forum->courseid,
+                'itemnumber' => (!empty($forum->grade_forum)) ? 1 : 0,
             ]);
 
             $pending = $total_posts - $total_graded;
@@ -338,16 +331,19 @@ ORDER BY c.fullname, cs.section, f.name
             ))->out(false);
 
             $data[] = $class;
+            $this->append_to_course_group($grouped, $forum->courseid, $forum->tutorid, $class);
+        }
 
+        $records = [];
+        foreach ($grouped as $group) {
             $record = new \stdClass();
             $record->status = 0;
-            $record->authorid = $forum->tutorid;
+            $record->authorid = $group->tutorid;
             $record->title = get_string('title_report_overdue_activities', 'tool_tutor_follow');
-            $record->description = get_string('overdue_activities_desc', 'tool_tutor_follow', $class);
+            $record->description = $this->build_course_description($group);
             $record->cc_email = $cc_default;
             $record->timecreated = time();
             $record->lasupdated = time();
-
             $records[] = $record;
         }
 
@@ -361,6 +357,63 @@ ORDER BY c.fullname, cs.section, f.name
             'report_overdue_activities',
             'reports'
         );
+    }
+
+    /**
+     * Append an activity to its course bucket.
+     *
+     * @param array $grouped
+     * @param int $courseid
+     * @param int $tutorid
+     * @param \stdClass $class
+     * @return void
+     */
+    private function append_to_course_group(array &$grouped, $courseid, $tutorid, \stdClass $class)
+    {
+        $key = (string) $courseid;
+        if (!isset($grouped[$key])) {
+            $group = new \stdClass();
+            $group->tutorid = $tutorid;
+            $group->coursename = $class->coursename;
+            $group->shortname = $class->shortname;
+            $group->summary = $class->summary;
+            $group->activities = [];
+            $grouped[$key] = $group;
+        }
+        $grouped[$key]->activities[] = $class;
+    }
+
+    /**
+     * Build description listing all pending activities for a course.
+     *
+     * @param \stdClass $group
+     * @return string
+     * @throws \coding_exception
+     */
+    private function build_course_description(\stdClass $group)
+    {
+        $rows = '';
+        foreach ($group->activities as $class) {
+            $rows .= '<tr>'
+                . '<td style="border:1px solid #ddd;padding:8px;">' . $class->activity . ' (' . $class->type . ')</td>'
+                . '<td style="border:1px solid #ddd;padding:8px;text-align:center;">' . $class->num . '</td>'
+                . '<td style="border:1px solid #ddd;padding:8px;">' . $class->limitdatestring . '</td>'
+                . '<td style="border:1px solid #ddd;padding:8px;">' . $class->firstname . ' ' . $class->lastname . '</td>'
+                . '<td style="border:1px solid #ddd;padding:8px;"><a href="' . $class->url . '" target="_blank">' . get_string('table_header_view', 'tool_tutor_follow') . '</a></td>'
+                . '</tr>';
+        }
+
+        $table = '<table style="border-collapse:collapse;width:100%;border:1px solid #ddd;">'
+            . '<thead><tr style="background-color:#f2f2f2;">'
+            . '<th style="border:1px solid #ddd;padding:8px;">' . get_string('nameactivity', 'tool_tutor_follow') . '</th>'
+            . '<th style="border:1px solid #ddd;padding:8px;">' . get_string('count', 'tool_tutor_follow') . '</th>'
+            . '<th style="border:1px solid #ddd;padding:8px;">' . get_string('limitdate', 'tool_tutor_follow') . '</th>'
+            . '<th style="border:1px solid #ddd;padding:8px;">' . get_string('table_header_teacher', 'tool_tutor_follow') . '</th>'
+            . '<th style="border:1px solid #ddd;padding:8px;">' . get_string('table_header_url', 'tool_tutor_follow') . '</th>'
+            . '</tr></thead><tbody>' . $rows . '</tbody></table>';
+
+        return '<strong>' . get_string('desc_course', 'tool_tutor_follow') . ':</strong> '
+            . $group->coursename . ' (' . $group->shortname . ')<br><br>' . $table;
     }
 
     /**

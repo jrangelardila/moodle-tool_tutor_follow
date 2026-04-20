@@ -103,12 +103,13 @@ class data_user_tutor extends \core\task\scheduled_task
            AND c.category $category_sql
            AND r.shortname $roles_sql";
 
-        $usercourses = $DB->get_records_sql($sql_user_courses, $params);
+        $usercourses = $DB->get_recordset_sql($sql_user_courses, $params);
 
         $courses_in_user = [];
         foreach ($usercourses as $record) {
             $courses_in_user[$record->userid][] = $record;
         }
+        $usercourses->close();
         $info = ['users' => []];
 
         foreach ($users as $user) {

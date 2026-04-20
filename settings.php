@@ -62,5 +62,19 @@ if ($hassiteconfig) {
         8,
         PARAM_INT
     ));
+    $settings->add(new admin_setting_configtext(
+        'tool_tutor_follow/grades_distribution_threshold',
+        get_string('grades_distribution_threshold_label', 'tool_tutor_follow'),
+        get_string('grades_distribution_threshold_desc', 'tool_tutor_follow'),
+        40,
+        PARAM_INT
+    ));
+    $settings->add(new admin_setting_configtext(
+        'tool_tutor_follow/grades_distribution_min_students',
+        get_string('grades_distribution_min_students_label', 'tool_tutor_follow'),
+        get_string('grades_distribution_min_students_desc', 'tool_tutor_follow'),
+        6,
+        PARAM_INT
+    ));
     $ADMIN->add('users', $settings);
 }

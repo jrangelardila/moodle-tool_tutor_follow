@@ -189,14 +189,23 @@ AND gi.itemmodule = 'forum' AND g.finalgrade!=0", ['forumid' => $forum->id]);
      * @return array
      * @throws \coding_exception
      */
+    private function get_forum_itemnumber(string $type, $module): int
+    {
+        if ($type === 'forum' && !empty($module->grade_forum)) {
+            return 1; // Whole forum grading enabled
+        }
+        return 0;
+    }
+
     private function process_stadistics_grades(string $type, $module)
     {
         $cm = get_coursemodule_from_instance($type, $module->id);
 
         $grade_item = grade_item::fetch([
-            'courseid' => $cm->course,
+            'courseid'     => $cm->course,
             'iteminstance' => $cm->instance,
-            'itemmodule' => $type,
+            'itemmodule'   => $type,
+            'itemnumber'   => $this->get_forum_itemnumber($type, $module),
         ]);
 
         $grades = $grade_item->get_final();
@@ -294,9 +303,10 @@ AND gi.itemmodule = 'forum' AND g.finalgrade!=0", ['forumid' => $forum->id]);
         $cm = get_coursemodule_from_instance($type, $module->id);
 
         $grade_item = grade_item::fetch([
-            'courseid' => $cm->course,
+            'courseid'     => $cm->course,
             'iteminstance' => $cm->instance,
-            'itemmodule' => $type,
+            'itemmodule'   => $type,
+            'itemnumber'   => $this->get_forum_itemnumber($type, $module),
         ]);
 
         $grades_info = [];

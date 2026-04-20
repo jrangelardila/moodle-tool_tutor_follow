@@ -223,23 +223,30 @@ class list_overdue_activities extends report_base
             $class = $this->create_assign_data_object($row);
             $data[] = $class;
 
-            $activity_key = $row->teacher_userid . '_' . $row->course_id . '_' . $row->assign_id;
+            $course_key = (string) $row->course_id;
 
-            if (!isset($activities_submissions[$activity_key])) {
-                $activities_submissions[$activity_key] = [
+            if (!isset($activities_submissions[$course_key])) {
+                $activities_submissions[$course_key] = [
                     'teacher_userid' => $row->teacher_userid,
                     'teacher_firstname' => $row->teacher_firstname,
                     'teacher_lastname' => $row->teacher_lastname,
                     'course' => $row->course_name,
                     'shortname' => $row->course_shortname,
                     'summary' => strip_tags($row->course_summary),
+                    'activities' => []
+                ];
+            }
+
+            $activity_key = 'assign_' . $row->assign_id;
+            if (!isset($activities_submissions[$course_key]['activities'][$activity_key])) {
+                $activities_submissions[$course_key]['activities'][$activity_key] = [
                     'activity' => $row->assign_name,
                     'limitdatestring' => $class->limitdatestring,
                     'submissions' => []
                 ];
             }
 
-            $activities_submissions[$activity_key]['submissions'][] = [
+            $activities_submissions[$course_key]['activities'][$activity_key]['submissions'][] = [
                 'student_firstname' => $row->student_firstname,
                 'student_lastname' => $row->student_lastname,
                 'student_idnumber' => $row->student_idnumber,
@@ -319,14 +326,12 @@ class list_overdue_activities extends report_base
      */
     private function create_assign_records($activities_submissions, $cc_default, &$activities_records)
     {
-        foreach ($activities_submissions as $activity_data) {
-            $table_html = $this->generate_submissions_table($activity_data['submissions']);
-
+        foreach ($activities_submissions as $course_data) {
             $record = new \stdClass();
             $record->status = 0;
-            $record->authorid = $activity_data['teacher_userid'];
+            $record->authorid = $course_data['teacher_userid'];
             $record->title = get_string('title_report_list_overdue_activities', 'tool_tutor_follow');
-            $record->description = $this->build_description($activity_data, $table_html, 'submissions');
+            $record->description = $this->build_description($course_data, '', 'submissions');
             $record->cc_email = $cc_default;
             $record->timecreated = time();
             $record->lasupdated = time();
@@ -386,6 +391,7 @@ class list_overdue_activities extends report_base
                 f.name AS forum_name,
                 f.duedate AS limitdate,
                 f.assessed,
+                f.grade_forum,
                 
                 c.id AS course_id,
                 c.fullname AS course_name,
@@ -518,6 +524,7 @@ class list_overdue_activities extends report_base
     AND gi.itemmodule = 'forum'
     AND gi.iteminstance = f.id
     AND gi.courseid = f.course
+    AND gi.itemnumber = CASE WHEN f.grade_forum > 0 THEN 1 ELSE 0 END
 
 LEFT JOIN {grade_grades} gg
     ON gg.itemid = gi.id
@@ -617,23 +624,30 @@ AND gg.id IS NULL
             $class = $this->create_forum_data_object($row);
             $data[] = $class;
 
-            $activity_key = $row->teacher_userid . '_' . $row->course_id . '_' . $row->forum_id;
+            $course_key = (string) $row->course_id;
 
-            if (!isset($activities_forum_submissions[$activity_key])) {
-                $activities_forum_submissions[$activity_key] = [
+            if (!isset($activities_forum_submissions[$course_key])) {
+                $activities_forum_submissions[$course_key] = [
                     'teacher_userid' => $row->teacher_userid,
                     'teacher_firstname' => $row->teacher_firstname,
                     'teacher_lastname' => $row->teacher_lastname,
                     'course' => $row->course_name,
                     'shortname' => $row->course_shortname,
                     'summary' => strip_tags($row->course_summary),
+                    'activities' => []
+                ];
+            }
+
+            $activity_key = 'forum_' . $row->forum_id;
+            if (!isset($activities_forum_submissions[$course_key]['activities'][$activity_key])) {
+                $activities_forum_submissions[$course_key]['activities'][$activity_key] = [
                     'activity' => $row->forum_name,
                     'limitdatestring' => $class->limitdatestring,
                     'submissions' => []
                 ];
             }
 
-            $activities_forum_submissions[$activity_key]['submissions'][] = [
+            $activities_forum_submissions[$course_key]['activities'][$activity_key]['submissions'][] = [
                 'student_firstname' => $row->student_firstname,
                 'student_lastname' => $row->student_lastname,
                 'student_idnumber' => $row->student_idnumber,
@@ -707,14 +721,12 @@ AND gg.id IS NULL
      */
     private function create_forum_records($activities_forum_submissions, $cc_default, &$activities_records)
     {
-        foreach ($activities_forum_submissions as $activity_data) {
-            $table_html = $this->generate_submissions_table($activity_data['submissions']);
-
+        foreach ($activities_forum_submissions as $course_data) {
             $record = new \stdClass();
             $record->status = 0;
-            $record->authorid = $activity_data['teacher_userid'];
+            $record->authorid = $course_data['teacher_userid'];
             $record->title = get_string('title_report_list_overdue_activities', 'tool_tutor_follow');
-            $record->description = $this->build_description($activity_data, $table_html, 'posts');
+            $record->description = $this->build_description($course_data, '', 'posts');
             $record->cc_email = $cc_default;
             $record->timecreated = time();
             $record->lasupdated = time();
@@ -891,21 +903,26 @@ AND gg.id IS NULL
      * @return string
      * @throws \coding_exception
      */
-    private function build_description($activity_data, $table_html, $type = 'submissions')
+    private function build_description($course_data, $table_html, $type = 'submissions')
     {
         $pending_string = $type === 'posts'
             ? get_string('desc_pending_posts', 'tool_tutor_follow')
             : get_string('desc_pending_submissions', 'tool_tutor_follow');
 
-        return '<strong>' . get_string('desc_teacher', 'tool_tutor_follow') . ':</strong> ' .
-            $activity_data['teacher_firstname'] . ' ' . $activity_data['teacher_lastname'] . '<br>' .
-            '<strong>' . get_string('desc_course', 'tool_tutor_follow') . ':</strong> ' .
-            $activity_data['course'] . ' (' . $activity_data['shortname'] . ')<br>' .
-            '<strong>' . get_string('desc_activity', 'tool_tutor_follow') . ':</strong> ' .
-            $activity_data['activity'] . '<br>' .
-            '<strong>' . get_string('desc_submission_deadline', 'tool_tutor_follow') . ':</strong> ' .
-            $activity_data['limitdatestring'] . '<br>' .
-            '<strong>' . $pending_string . ':</strong><br>' . $table_html;
+        $blocks = '';
+        foreach ($course_data['activities'] as $activity) {
+            $blocks .= '<div style="margin-bottom:14px;">'
+                . '<strong>' . get_string('desc_activity', 'tool_tutor_follow') . ':</strong> '
+                . $activity['activity'] . '<br>'
+                . '<strong>' . get_string('desc_submission_deadline', 'tool_tutor_follow') . ':</strong> '
+                . $activity['limitdatestring'] . '<br>'
+                . '<strong>' . $pending_string . ':</strong><br>'
+                . $this->generate_submissions_table($activity['submissions'])
+                . '</div>';
+        }
+
+        return '<strong>' . get_string('desc_course', 'tool_tutor_follow') . ':</strong> ' .
+            $course_data['course'] . ' (' . $course_data['shortname'] . ')<br><br>' . $blocks;
     }
 
     /**
