@@ -228,9 +228,20 @@ class form_configuration extends \moodleform
 
         set_config('categories', json_encode($categories), 'tool_tutor_follow');
         set_config('roles', json_encode($roles), 'tool_tutor_follow');
-        set_config('reports_enable', json_encode(
-            (object)$this->get_data()->report_enabled
-        ), 'tool_tutor_follow');
+
+        $reports_enable = (object)$this->get_data()->report_enabled;
+        set_config('reports_enable', json_encode($reports_enable), 'tool_tutor_follow');
+
+        $fs = get_file_storage();
+        $contextid = \context_system::instance()->id;
+        foreach ($reports_enable as $shortname => $enabled) {
+            if (!$enabled) {
+                $file = $fs->get_file($contextid, 'tool_tutor_follow', 'reports', 0, '/', "report_{$shortname}");
+                if ($file) {
+                    $file->delete();
+                }
+            }
+        }
 
         $task = \core\task\manager::get_scheduled_task('\\tool_tutor_follow\\task\\execute_reports');
         if ($task) {

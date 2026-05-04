@@ -28,6 +28,12 @@ require_once(__DIR__ . '/lib.php');
 
 $shortname = required_param('shortname', PARAM_ALPHANUMEXT);
 require_login();
+require_capability('tool/tutor_follow:view', context_system::instance());
+
+$reports_enable = json_decode(get_config('tool_tutor_follow', 'reports_enable'), true);
+if (empty($reports_enable[$shortname])) {
+    throw new \moodle_exception('nodata', 'tool_tutor_follow');
+}
 
 $classname = "\\tool_tutor_follow\\report\\" . $shortname;
 if (class_exists($classname)) {

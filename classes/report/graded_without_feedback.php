@@ -135,7 +135,7 @@ class graded_without_feedback extends report_base
 
             WHERE c.category {$category_sql}
               AND ag.grade IS NOT NULL
-              AND ag.grade >= 0
+              AND ag.grade > 0
               AND (
                     afc.id IS NULL
                     OR afc.commenttext IS NULL
@@ -220,6 +220,7 @@ class graded_without_feedback extends report_base
 
             WHERE c.category {$category_sql}
               AND gg.finalgrade IS NOT NULL
+              AND gg.finalgrade > 0
               AND gg.usermodified > 0
               AND EXISTS (
                     SELECT 1
