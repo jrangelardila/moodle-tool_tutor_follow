@@ -19,42 +19,153 @@
     @copyright  2025 Jhon Rangel Ardila
     @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 }}
-<table class="table">
-    <thead>
-    <tr class="bg-primary text-white text-center">
-        <td><b>{{#str}}teacher, tool_tutor_follow{{/str}}</b></td>
-        <td><b>{{#str}}idnumber, tool_tutor_follow{{/str}}</b></td>
-        <td><b>{{#str}}email, tool_tutor_follow{{/str}}</b></td>
-        <td colspan="2"><b>{{#str}}lastaccess, tool_tutor_follow{{/str}}</b></td>
-        <td class="ml-5 pl-5"><b>{{#str}}course, tool_tutor_follow{{/str}}</b></td>
-        <td colspan="2"><b>{{#str}}category, tool_tutor_follow{{/str}}</b></td>
-        <td><b>{{#str}}dedicationtime, tool_tutor_follow{{/str}}</b></td>
-        <td><b>{{#str}}showdetails, tool_tutor_follow{{/str}}</b></td>
-    </tr>
-    </thead>
-    <tbody>
-    {{#users}}
-        {{#cursos}}
-            {{#category_url}}
+
+<style>
+.ttf-ctrl{display:flex;align-items:center;gap:1rem;padding:.7rem 1.1rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;margin-bottom:1rem;flex-wrap:wrap}
+.ttf-view-labels{display:flex;align-items:center;gap:.55rem;font-size:.84rem;font-weight:600;color:#64748b}
+.ttf-view-labels span.active{color:var(--bs-primary)}
+.ttf-switch{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0}
+.ttf-switch input{opacity:0;width:0;height:0}
+.ttf-slider{position:absolute;inset:0;background:#cbd5e1;border-radius:24px;cursor:pointer;transition:background .2s}
+.ttf-slider::before{content:"";position:absolute;width:18px;height:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.ttf-switch input:checked + .ttf-slider{background:var(--bs-primary)}
+.ttf-switch input:checked + .ttf-slider::before{transform:translateX(20px)}
+.ttf-search{margin-left:auto;max-width:210px}
+.ttf-avatar{width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #e2e8f0;flex-shrink:0;vertical-align:middle}
+.ttf-name-cell{display:flex;align-items:center;gap:.5rem;white-space:nowrap}
+.ttf-num{display:inline-flex;align-items:center;justify-content:center;background:rgba(var(--bs-primary-rgb),.12);color:var(--bs-primary);border-radius:20px;font-size:.75rem;font-weight:700;padding:.15rem .55rem;min-width:1.8rem}
+</style>
+
+<div class="ttf-ctrl">
+    <div class="ttf-view-labels">
+        <span id="ttf-label-courses">{{#str}}viewbycourse, tool_tutor_follow{{/str}}</span>
+        <label class="ttf-switch">
+            <input type="checkbox" id="ttf-view-toggle" checked>
+            <span class="ttf-slider"></span>
+        </label>
+        <span id="ttf-label-users">{{#str}}viewbyuser, tool_tutor_follow{{/str}}</span>
+    </div>
+    <input type="text" id="ttf-search" class="form-control form-control-sm ttf-search"
+           placeholder="{{#str}}seachuser, tool_tutor_follow{{/str}}">
+</div>
+
+{{! Vista por cursos }}
+<div id="ttf-view-courses" style="display:none;overflow-x:auto">
+    <table class="dtl-tbl w-100" id="ttf-tbl-courses">
+        <thead>
+            <tr>
+                <th>{{#str}}teacher, tool_tutor_follow{{/str}}</th>
+                <th>{{#str}}idnumber, tool_tutor_follow{{/str}}</th>
+                <th>{{#str}}course, tool_tutor_follow{{/str}}</th>
+                <th>{{#str}}category, tool_tutor_follow{{/str}}</th>
+                <th>{{#str}}lastaccess, tool_tutor_follow{{/str}}</th>
+                <th>{{#str}}dedicationtime, tool_tutor_follow{{/str}}</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        {{#users}}
+            {{#cursos}}
+                {{#category_url}}
                 <tr>
-                    <td><a href="{{profile_url}}" target="_blank">{{name}}</a></td>
-                    <td>{{idnumber}}</td>
-                    <td>{{email}}</td>
-                    <td colspan="2">
-                        {{#userdate}} {{lastaccess}}, {{#str}}strftimedatetime, core_langconfig{{/str}} {{/userdate}}
+                    <td>
+                        <div class="ttf-name-cell">
+                            <img src="{{{picture}}}" class="ttf-avatar" alt="">
+                            <a href="{{{profile_url}}}" target="_blank">{{{name}}}</a>
+                        </div>
                     </td>
-                    <td class="ml-5 pl-5"><a href="{{course_url}}" target="_blank">{{course_name}}</a></td>
-                    <td colspan="2"><a href="{{category_url}}" target="_blank">{{category_name}}</a></td>
+                    <td>{{{idnumber}}}</td>
+                    <td><a href="{{{course_url}}}" target="_blank">{{{course_name}}}</a></td>
+                    <td><a href="{{{category_url}}}" target="_blank">{{{category_name}}}</a></td>
+                    <td>{{#userdate}}{{lastaccess}}, {{#str}}strftimedatetime, core_langconfig{{/str}}{{/userdate}}</td>
                     <td>{{{dedication_time}}}</td>
                     <td>
-                        <a class="btn btn-primary" href="{{course_details}}">
-                            {{#str}}showdetails, tool_tutor_follow{{/str}}
+                        <a class="btn btn-primary btn-sm" href="{{{course_details}}}">
+                            <i class="fa fa-book-open mr-1"></i>{{#str}}showcoursedetails, tool_tutor_follow{{/str}}
                         </a>
                     </td>
                 </tr>
-            {{/category_url}}
-        {{/cursos}}
-    {{/users}}
-    </tbody>
-</table>
+                {{/category_url}}
+            {{/cursos}}
+        {{/users}}
+        </tbody>
+    </table>
+</div>
 
+{{! Vista por docente (default) }}
+<div id="ttf-view-users" style="overflow-x:auto">
+    <table class="dtl-tbl w-100" id="ttf-tbl-users">
+        <thead>
+            <tr>
+                <th>{{#str}}teacher, tool_tutor_follow{{/str}}</th>
+                <th>{{#str}}idnumber, tool_tutor_follow{{/str}}</th>
+                <th>{{#str}}email, tool_tutor_follow{{/str}}</th>
+                <th>{{#str}}enrolledcourses, tool_tutor_follow{{/str}}</th>
+                <th>{{#str}}lastaccess, tool_tutor_follow{{/str}}</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        {{#users}}
+            {{#profile_url}}
+            <tr>
+                <td>
+                    <div class="ttf-name-cell">
+                        <img src="{{{picture}}}" class="ttf-avatar" alt="">
+                        <a href="{{{profile_url}}}" target="_blank">{{{name}}}</a>
+                    </div>
+                </td>
+                <td>{{{idnumber}}}</td>
+                <td>{{{email}}}</td>
+                <td><span class="ttf-num">{{numcursos}}</span></td>
+                <td>{{{lastacces_text}}}</td>
+                <td>
+                    <a class="btn btn-secondary btn-sm" href="{{{datails_user}}}">
+                        <i class="fa fa-user-circle mr-1"></i>{{#str}}showuserdetails, tool_tutor_follow{{/str}}
+                    </a>
+                </td>
+            </tr>
+            {{/profile_url}}
+        {{/users}}
+        </tbody>
+    </table>
+</div>
+
+{{#js}}
+(function() {
+    var toggle      = document.getElementById('ttf-view-toggle');
+    var viewCourses = document.getElementById('ttf-view-courses');
+    var viewUsers   = document.getElementById('ttf-view-users');
+    var labelCourses = document.getElementById('ttf-label-courses');
+    var labelUsers   = document.getElementById('ttf-label-users');
+    var search      = document.getElementById('ttf-search');
+
+    function applyLabels(byUser) {
+        labelCourses.classList.toggle('active', !byUser);
+        labelUsers.classList.toggle('active', byUser);
+    }
+
+    function filterRows(q) {
+        var tblId = toggle.checked ? 'ttf-tbl-users' : 'ttf-tbl-courses';
+        var rows  = document.getElementById(tblId).querySelectorAll('tbody tr');
+        rows.forEach(function(row) {
+            row.style.display = (!q || row.textContent.toLowerCase().indexOf(q) !== -1) ? '' : 'none';
+        });
+    }
+
+    toggle.addEventListener('change', function() {
+        var byUser = this.checked;
+        viewCourses.style.display = byUser ? 'none'  : 'block';
+        viewUsers.style.display   = byUser ? 'block' : 'none';
+        applyLabels(byUser);
+        search.value = '';
+        filterRows('');
+    });
+
+    search.addEventListener('input', function() {
+        filterRows(this.value.toLowerCase());
+    });
+
+    applyLabels(true);
+})();
+{{/js}}

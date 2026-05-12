@@ -27,13 +27,13 @@
             <div class="col">
                 <h2 class="h4 mb-1 text-dark font-weight-bold">{{title}}</h2>
                 <p class="mb-0 text-muted small text-uppercase">
-                    {{str_report}} #{{id}} | {{str_author}}:
+                    {{#str}}report, tool_tutor_follow{{/str}} #{{id}} | {{#str}}author, tool_tutor_follow{{/str}}:
                     <a href="{{author.profileurl}}" class="text-secondary font-weight-bold">{{author.fullname}}</a>
                 </p>
             </div>
             <div class="col-auto">
                 <span class="badge badge-dark p-2 px-3">
-                    {{str_status}}: {{status}}
+                    {{#str}}status, tool_tutor_follow{{/str}}: {{status}}
                 </span>
             </div>
         </div>
@@ -44,7 +44,7 @@
         <!-- Sección de Descripción y Archivos (Pluginfile) -->
         <div class="mb-5">
             <h6 class="text-muted small font-weight-bold mb-3 border-bottom pb-2">
-                <i class="fas fa-align-left mr-1"></i> {{str_description}}
+                <i class="fas fa-align-left mr-1"></i> {{#str}}description, tool_tutor_follow{{/str}}
             </h6>
             <div class="p-3  border-left border-secondary rounded-right shadow-xs">
                 {{{description}}}
@@ -71,7 +71,7 @@
                     </div>
                     {{/cc_users}}
                     {{^cc_users}}
-                        <span class="text-muted italic small border p-2 rounded bg-light w-100">{{str_no_users}}</span>
+                        <span class="text-muted italic small border p-2 rounded bg-light w-100">{{#str}}no_users, tool_tutor_follow{{/str}}</span>
                     {{/cc_users}}
                 </div>
             </div>
@@ -95,7 +95,7 @@
                     </div>
                     {{/cco_users}}
                     {{^cco_users}}
-                        <span class="text-muted italic small border p-2 rounded bg-light w-100">{{str_no_users}}</span>
+                        <span class="text-muted italic small border p-2 rounded bg-light w-100">{{#str}}no_users, tool_tutor_follow{{/str}}</span>
                     {{/cco_users}}
                 </div>
             </div>
@@ -104,8 +104,8 @@
 
     <!-- Footer con fechas traducidas -->
     <div class="p-3 bg-light border-top d-flex justify-content-between text-muted" style="font-size: 0.8rem;">
-        <span><i class="far fa-calendar-plus mr-1"></i> {{str_created}}: {{timecreated}}</span>
-        <span><i class="fas fa-sync-alt mr-1"></i> {{str_lastupdated}}: {{lastupdated}}</span>
+        <span><i class="far fa-calendar-plus mr-1"></i> {{#str}}timecreated, tool_tutor_follow{{/str}}: {{timecreated}}</span>
+        <span><i class="fas fa-sync-alt mr-1"></i> {{#str}}lasupdated, tool_tutor_follow{{/str}}: {{lastupdated}}</span>
     </div>
 </div>
 

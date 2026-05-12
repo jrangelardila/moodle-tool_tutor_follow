@@ -17,7 +17,7 @@
  * Bulk selection of reports in option 3 list.
  *
  * @module     tool_tutor_follow/select_reports
- * @package    tool_tutor_follow
+ * @package
  * @copyright  2026 Jhon Rangel Ardila
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */

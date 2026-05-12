@@ -270,7 +270,7 @@ ORDER BY c.fullname, cs.section, f.name
             $total_graded = $DB->count_records_sql("
         SELECT COUNT(DISTINCT gg.userid)
         FROM {grade_items} gi
-        JOIN {grade_grades} gg ON gg.itemid = gi.id AND gg.finalgrade IS NOT NULL
+        JOIN {grade_grades} gg ON gg.itemid = gi.id
         JOIN {user} u ON u.id = gg.userid
         JOIN {user_enrolments} ue ON ue.userid = u.id
         JOIN {enrol} e ON e.id = ue.enrolid AND e.courseid = :courseid

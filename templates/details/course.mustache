@@ -14,349 +14,402 @@
     You should have received a copy of the GNU General Public License
     along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-    @template   tool_tutor_follow/course
-    @package    tool_tutor_follow
+    @template   tool_tutor_follow/details/course
     @copyright  2025 Jhon Rangel Ardila
     @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 }}
 {{#course}}
-    <hr>
-    {{#forums}}
-        <div class="row text-white text-center bg-primary font-weight-bold">
-            <div class="col border">
-                {{#str}} forum, tool_tutor_follow {{/str}}
-            </div>
-            <div class="col border">
-                {{#str}} end_date, tool_tutor_follow {{/str}}
-            </div>
-            <div class="col border">
-                {{#str}} total_participations, tool_tutor_follow {{/str}}
-            </div>
-            <div class="col border">
-                {{#str}} pending_grades, tool_tutor_follow {{/str}}
-            </div>
+
+{{#forums}}
+{{! Forum activity card }}
+<div class="dtl-activity dtl-forum">
+
+    <div class="dtl-activity-head">
+        <div class="dtl-activity-icon bg-primary">
+            <i class="fa fa-comments"></i>
         </div>
-        <div class="row d-flex align-items-center text-center border-bottom">
-            <div class="col border-right">
-                <a href="{{{url}}}" target="_blank">{{name}}</a>
-            </div>
-            <div class="col border-right">
-                {{#message_cutoffdate}}
-                    {{{message_cutoffdate}}}
-                {{/message_cutoffdate}}
-                {{^message_cutoffdate}}
-                    {{#userdate}} {{cutoffdate}}, {{#str}} strftimedatetime, core_langconfig {{/str}} {{/userdate}}
-                {{/message_cutoffdate}}
-            </div>
-            <div class="col border-right">
-                {{total_posts}}
-            </div>
-            <div class="col border-right">
-                {{pending_grades}}
-            </div>
+        <a href="{{{url}}}" target="_blank" class="dtl-activity-name">{{{name}}}</a>
+        <div class="dtl-badges">
+            <span class="dtl-badge dtl-badge-blue">
+                <i class="fa fa-comment-alt fa-xs"></i>
+                {{total_posts}} {{#str}}total_participations, tool_tutor_follow{{/str}}
+            </span>
+            {{#pending_grades}}
+            <span class="dtl-badge dtl-badge-red">
+                <i class="fa fa-clock fa-xs"></i>
+                {{pending_grades}} {{#str}}pending_grades, tool_tutor_follow{{/str}}
+            </span>
+            {{/pending_grades}}
+            {{^pending_grades}}
+            <span class="dtl-badge dtl-badge-teal">
+                <i class="fa fa-check fa-xs"></i>
+                0 {{#str}}pending_grades, tool_tutor_follow{{/str}}
+            </span>
+            {{/pending_grades}}
+            {{#count_without_feedback}}
+            <span class="dtl-badge dtl-badge-gray">
+                <i class="fa fa-comment-slash fa-xs"></i>
+                {{count_without_feedback}} {{#str}}report_graded_without_feedback, tool_tutor_follow{{/str}}
+            </span>
+            {{/count_without_feedback}}
         </div>
-        <div class="container pt-2 pb-2 w-100">
-            <details>
-                <summary class="text-success h6">{{#str}} grading_details, tool_tutor_follow {{/str}}</summary>
-                <table bgcolor="white">
-                    <tbody>
-                    <tr class="text-white text-center bg-primary font-weight-bold">
-                        <td class="border">
-                            {{#str}} student, tool_tutor_follow {{/str}}
-                        </td>
-                        <td class="border">
-                            {{#str}} submission_date, tool_tutor_follow {{/str}}
-                        </td>
-                        <td class="border">
-                            {{#str}} grader, tool_tutor_follow {{/str}}
-                        </td>
-                        <td class="border">
-                            {{#str}} grading_date, tool_tutor_follow {{/str}}
-                        </td>
-                        <td class="border">
-                            {{#str}} grade, tool_tutor_follow {{/str}}
-                        </td>
-                        <td class="border" style="width: 550px;">
-                            {{#str}} feedback, tool_tutor_follow {{/str}}
-                        </td>
+    </div>
+
+    <div class="dtl-activity-dates">
+        <span>
+            <i class="fa fa-calendar-alt" style="margin-right:.3rem"></i>
+            {{#str}}end_date, tool_tutor_follow{{/str}}:&nbsp;
+            {{#message_cutoffdate}}{{{message_cutoffdate}}}{{/message_cutoffdate}}
+            {{^message_cutoffdate}}{{#userdate}}{{cutoffdate}}, {{#str}}strftimedatetime, core_langconfig{{/str}}{{/userdate}}{{/message_cutoffdate}}
+        </span>
+    </div>
+
+    <details class="dtl-details">
+        <summary>
+            <i class="fa fa-list-alt fa-xs"></i>
+            {{#str}}grading_details, tool_tutor_follow{{/str}}
+        </summary>
+        <div class="dtl-details-body">
+            <table class="dtl-inner-tbl">
+                <thead>
+                    <tr>
+                        <th>{{#str}}student, tool_tutor_follow{{/str}}</th>
+                        <th>{{#str}}submission_date, tool_tutor_follow{{/str}}</th>
+                        <th>{{#str}}grader, tool_tutor_follow{{/str}}</th>
+                        <th>{{#str}}grading_date, tool_tutor_follow{{/str}}</th>
+                        <th>{{#str}}grade, tool_tutor_follow{{/str}}</th>
+                        <th>{{#str}}feedback, tool_tutor_follow{{/str}}</th>
                     </tr>
-                    {{#grades_process}}
-                        <tr class="align-items-center text-center border-bottom">
-                            <td class=" border-right">
-                                <a href="{{{user_url}}}" target="_blank">{{{user}}}</a>
-                            </td>
-                            <td class=" border-right">
-                                {{#time_created_message_forum}}
-                                    {{time_created_message_forum}}
-                                {{/time_created_message_forum}}
-                                {{^time_created_message_forum}}
-                                    {{#userdate}} {{time_created_forum}}, {{#str}}
-                                        strftimedatetime, core_langconfig {{/str}} {{/userdate}}
-                                {{/time_created_message_forum}}
-                            </td>
-                            <td class="border-right">
-                                <a href="{{{usermodified_url}}}" target="_blank">{{{usermodified}}}</a>
-                            </td>
-                            <td class="border-right">
-                                {{#userdate}} {{timemodified}}, {{#str}}
-                                    strftimedatetime, core_langconfig {{/str}} {{/userdate}}
-                            </td>
-                            <td class="border-right">
-                                {{grade}}
-                            </td>
-                            <td class="border-right  text-left" style="width: 550px;">
-                                {{{feedbak}}}
-                            </td>
+                </thead>
+                <tbody>
+                {{#grades_process}}
+                    <tr>
+                        <td><a href="{{{user_url}}}" target="_blank">{{{user}}}</a></td>
+                        <td>
+                            {{#time_created_message_forum}}{{{time_created_message_forum}}}{{/time_created_message_forum}}
+                            {{^time_created_message_forum}}{{#userdate}}{{time_created_forum}}, {{#str}}strftimedatetime, core_langconfig{{/str}}{{/userdate}}{{/time_created_message_forum}}
+                        </td>
+                        <td><a href="{{{usermodified_url}}}" target="_blank">{{{usermodified}}}</a></td>
+                        <td>{{#userdate}}{{timemodified}}, {{#str}}strftimedatetime, core_langconfig{{/str}}{{/userdate}}</td>
+                        <td><span class="dtl-badge dtl-badge-blue">{{grade}}</span></td>
+                        <td class="dtl-feedback">{{{feedbak}}}</td>
+                    </tr>
+                {{/grades_process}}
+                </tbody>
+            </table>
+        </div>
+    </details>
+
+    <details class="dtl-details">
+        <summary>
+            <i class="fa fa-chart-bar fa-xs"></i>
+            {{#str}}grade_distribution, tool_tutor_follow{{/str}}
+        </summary>
+        <div class="dtl-details-body">
+            <div id="stadistics-{{{course_module}}}">
+                <table class="dtl-dist-tbl">
+                    <thead>
+                        <tr>
+                            <th>{{#str}}grade, tool_tutor_follow{{/str}}</th>
+                            <th>{{#str}}assignment_count, tool_tutor_follow{{/str}}</th>
                         </tr>
-                    {{/grades_process}}
+                    </thead>
+                    <tbody>
+                    {{#stadistics_grades}}
+                        <tr>
+                            <td>{{grade}}</td>
+                            <td>{{count}}</td>
+                        </tr>
+                    {{/stadistics_grades}}
                     </tbody>
                 </table>
-            </details>
-        </div>
-        <div class="container pt-2 pb-2 w-100">
-            <details>
-                <summary class="text-info h6">{{#str}} grade_distribution, tool_tutor_follow {{/str}}</summary>
-                <div id="stadistics-{{{course_module}}}">
-                    <div class="row text-white text-center bg-primary font-weight-bold">
-                        <div class="col border">
-                            {{#str}} grade, tool_tutor_follow {{/str}}
-                        </div>
-                        <div class="col border">
-                            {{#str}} assignment_count, tool_tutor_follow {{/str}}
-                        </div>
-                    </div>
-                    {{#stadistics_grades}}
-                        <div class="row text-center">
-                            <div class="col border">
-                                {{grade}}
-                            </div>
-                            <div class="col border">
-                                {{count}}
-                            </div>
-                        </div>
-                    {{/stadistics_grades}}
-                    {{#js}}
-                        require(['jquery', 'core/chart_builder', 'core/chart_output_chartjs'], function($,Builder,
-                        Output) {
-
-                        info={{{json_stadistics_grades}}};
-
-
-                        let chart = $(`
-                        <div class="container">
-                            <canvas id="chart-{{{course_module}}}" style="height: 300px;"></canvas>
-                        </div>
-                        `);
+                {{#js}}
+                    require(['jquery', 'core/chart_builder', 'core/chart_output_chartjs'], function($, Builder, Output) {
+                        var info = {{{json_stadistics_grades}}};
+                        var chart = $('<div class="container"><canvas id="chart-{{{course_module}}}" style="height:280px"></canvas></div>');
                         $("#stadistics-{{{course_module}}}").append(chart);
-
-                        info.sort((a, b) => a.grade - b.grade);
-
-                        const notes=info.map(item => item.grade);
-                        const count_notes=info.map(item => item.count);
-
-                        const chartData = {
-                        type: 'bar',
-                        series: [{
-                        label: '{{number_grades_string}}',
-                        labels: null,
-                        type: null,
-                        values: count_notes,
-                        colors: [],
-                        axes: {x: null, y: null},
-                        smooth: null
-                        }],
-                        labels: notes,
-                        title: `{{name}}`,
-                        axes: {x: [], y: []},
-                        config_colorset: null,
-                        doughnut: null
+                        info.sort(function(a, b) { return a.grade - b.grade; });
+                        var notes       = info.map(function(item) { return item.grade; });
+                        var count_notes = info.map(function(item) { return item.count; });
+                        var chartData = {
+                            type: 'bar',
+                            series: [{ label: '{{number_grades_string}}', labels: null, type: null, values: count_notes, colors: [], axes: {x: null, y: null}, smooth: null }],
+                            labels: notes, title: '{{name}}',
+                            axes: {x: [], y: []}, config_colorset: null, doughnut: null
                         };
-
-                        const chartArea = $(`#chart-{{{course_module}}}`);
-                        Builder.make(chartData).then(function (chartInstance) {
-                        new Output(chartArea, chartInstance);
+                        Builder.make(chartData).then(function(chartInstance) {
+                            new Output($('#chart-{{{course_module}}}'), chartInstance);
                         });
+                    });
+                {{/js}}
+            </div>
+        </div>
+    </details>
 
-
-                        });
-                    {{/js}}
-                </div>
-            </details>
-        </div>
-    {{/forums}}
-    <hr>
-    {{#assigns}}
-        <div class="row text-white text-center bg-primary font-weight-bold">
-            <div class="col border">
-                {{#str}} assignment, tool_tutor_follow {{/str}}
-            </div>
-            <div class="col border">
-                {{#str}} start_date, tool_tutor_follow {{/str}}
-            </div>
-            <div class="col border">
-                {{#str}} end_date, tool_tutor_follow {{/str}}
-            </div>
-            <div class="col border">
-                {{#str}} total_submissions, tool_tutor_follow {{/str}}
-            </div>
-            <div class="col border">
-                {{#str}} pending_grades, tool_tutor_follow {{/str}}
-            </div>
-        </div>
-        <div class="row d-flex align-items-center text-center border-bottom">
-            <div class="col border-right">
-                <a href="{{{url}}}" target="_blank">{{name}}</a>
-            </div>
-            <div class="col border-right">
-                {{#message_allowsubmissionsfromdate}}
-                    {{{message_allowsubmissionsfromdate}}}
-                {{/message_allowsubmissionsfromdate}}
-                {{^message_allowsubmissionsfromdate}}
-                    {{#userdate}} {{allowsubmissionsfromdate}}, {{#str}}
-                        strftimedatetime, core_langconfig {{/str}} {{/userdate}}
-                {{/message_allowsubmissionsfromdate}}
-            </div>
-            <div class="col border-right">
-                {{#message_cutoffdate}}
-                    {{{message_cutoffdate}}}
-                {{/message_cutoffdate}}
-                {{^message_cutoffdate}}
-                    {{#userdate}} {{cutoffdate}}, {{#str}} strftimedatetime, core_langconfig {{/str}} {{/userdate}}
-                {{/message_cutoffdate}}
-            </div>
-            <div class="col border-right">
-                {{total_submissions}}
-            </div>
-            <div class="col border-right">
-                {{pending_grades}}
-            </div>
-        </div>
-        <div class="container pt-2 pb-2 w-100">
-            <details>
-                <summary class="text-success h6">{{#str}} grading_details, tool_tutor_follow {{/str}}</summary>
-                <table bgcolor="white">
-                    <tbody>
-                    <tr class="text-white text-center bg-primary font-weight-bold">
-                        <td class="border">
-                            {{#str}} student, tool_tutor_follow {{/str}}
-                        </td>
-                        <td class="border">
-                            {{#str}} submission_date, tool_tutor_follow {{/str}}
-                        </td>
-                        <td class="border">
-                            {{#str}} grader, tool_tutor_follow {{/str}}
-                        </td>
-                        <td class="border">
-                            {{#str}} grading_date, tool_tutor_follow {{/str}}
-                        </td>
-                        <td class="border">
-                            {{#str}} grade, tool_tutor_follow {{/str}}
-                        </td>
-                        <td class="border" style="width: 550px;">
-                            {{#str}} feedback, tool_tutor_follow {{/str}}
-                        </td>
+    {{#pending_grades}}
+    <details class="dtl-details">
+        <summary>
+            <i class="fa fa-hourglass-half fa-xs"></i>
+            {{#str}}pendinggrading, tool_tutor_follow{{/str}}
+        </summary>
+        <div class="dtl-details-body">
+            <table class="dtl-inner-tbl">
+                <thead>
+                    <tr>
+                        <th>{{#str}}table_header_student, tool_tutor_follow{{/str}}</th>
+                        <th>{{#str}}table_header_idnumber, tool_tutor_follow{{/str}}</th>
+                        <th>{{#str}}submission_date, tool_tutor_follow{{/str}}</th>
+                        <th></th>
                     </tr>
-                    {{#grades_process}}
-                        <tr class="align-items-center text-center border-bottom">
-                            <td class=" border-right">
-                                <a href="{{{user_url}}}" target="_blank">{{{user}}}</a>
-                            </td>
-                            <td class=" border-right">
-                                {{#time_created_message_assign}}
-                                    {{time_created_message_assign}}
-                                {{/time_created_message_assign}}
-                                {{^time_created_message_assign}}
-                                    {{#userdate}} {{time_created_assign}}, {{#str}}
-                                        strftimedatetime, core_langconfig {{/str}} {{/userdate}}
-                                {{/time_created_message_assign}}
-                            </td>
-                            <td class="border-right">
-                                <a href="{{{usermodified_url}}}" target="_blank">{{{usermodified}}}</a>
-                            </td>
-                            <td class="border-right">
-                                {{#userdate}} {{timemodified}}, {{#str}}
-                                    strftimedatetime, core_langconfig {{/str}} {{/userdate}}
-                            </td>
-                            <td class="border-right">
-                                {{grade}}
-                            </td>
-                            <td class="border-right  text-left" style="width: 550px;">
-                                {{{feedbak}}}
-                            </td>
+                </thead>
+                <tbody>
+                {{#pending_submissions}}
+                    <tr>
+                        <td>{{{student_name}}}</td>
+                        <td>{{{student_idnumber}}}</td>
+                        <td>{{{submission_date_string}}}</td>
+                        <td><a href="{{{url}}}" target="_blank">{{#str}}table_header_view, tool_tutor_follow{{/str}}</a></td>
+                    </tr>
+                {{/pending_submissions}}
+                </tbody>
+            </table>
+        </div>
+    </details>
+    {{/pending_grades}}
+
+    {{#count_without_feedback}}
+    <details class="dtl-details">
+        <summary>
+            <i class="fa fa-comment-slash fa-xs"></i>
+            {{#str}}report_graded_without_feedback, tool_tutor_follow{{/str}}
+        </summary>
+        <div class="dtl-details-body">
+            <table class="dtl-inner-tbl">
+                <thead>
+                    <tr>
+                        <th>{{#str}}table_header_student, tool_tutor_follow{{/str}}</th>
+                        <th>{{#str}}table_header_idnumber, tool_tutor_follow{{/str}}</th>
+                        <th>{{#str}}table_header_grade, tool_tutor_follow{{/str}}</th>
+                        <th>{{#str}}table_header_graded_at, tool_tutor_follow{{/str}}</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {{#without_feedback}}
+                    <tr>
+                        <td>{{{student_name}}}</td>
+                        <td>{{{student_idnumber}}}</td>
+                        <td><span class="dtl-badge dtl-badge-blue">{{grade}}</span></td>
+                        <td>{{{graded_at_string}}}</td>
+                        <td><a href="{{{url}}}" target="_blank">{{#str}}table_header_view, tool_tutor_follow{{/str}}</a></td>
+                    </tr>
+                {{/without_feedback}}
+                </tbody>
+            </table>
+        </div>
+    </details>
+    {{/count_without_feedback}}
+
+</div>
+{{/forums}}
+
+{{#assigns}}
+{{! Assign activity card }}
+<div class="dtl-activity dtl-assign">
+
+    <div class="dtl-activity-head">
+        <div class="dtl-activity-icon bg-secondary">
+            <i class="fa fa-file-alt"></i>
+        </div>
+        <a href="{{{url}}}" target="_blank" class="dtl-activity-name">{{{name}}}</a>
+        <div class="dtl-badges">
+            <span class="dtl-badge dtl-badge-purple">
+                <i class="fa fa-upload fa-xs"></i>
+                {{total_submissions}} {{#str}}total_submissions, tool_tutor_follow{{/str}}
+            </span>
+            {{#pending_grades}}
+            <span class="dtl-badge dtl-badge-red">
+                <i class="fa fa-clock fa-xs"></i>
+                {{pending_grades}} {{#str}}pending_grades, tool_tutor_follow{{/str}}
+            </span>
+            {{/pending_grades}}
+            {{^pending_grades}}
+            <span class="dtl-badge dtl-badge-teal">
+                <i class="fa fa-check fa-xs"></i>
+                0 {{#str}}pending_grades, tool_tutor_follow{{/str}}
+            </span>
+            {{/pending_grades}}
+            {{#count_without_feedback}}
+            <span class="dtl-badge dtl-badge-gray">
+                <i class="fa fa-comment-slash fa-xs"></i>
+                {{count_without_feedback}} {{#str}}report_graded_without_feedback, tool_tutor_follow{{/str}}
+            </span>
+            {{/count_without_feedback}}
+        </div>
+    </div>
+
+    <div class="dtl-activity-dates">
+        <span>
+            <i class="fa fa-calendar-plus" style="margin-right:.3rem"></i>
+            {{#str}}start_date, tool_tutor_follow{{/str}}:&nbsp;
+            {{#message_allowsubmissionsfromdate}}{{{message_allowsubmissionsfromdate}}}{{/message_allowsubmissionsfromdate}}
+            {{^message_allowsubmissionsfromdate}}{{#userdate}}{{allowsubmissionsfromdate}}, {{#str}}strftimedatetime, core_langconfig{{/str}}{{/userdate}}{{/message_allowsubmissionsfromdate}}
+        </span>
+        <span>
+            <i class="fa fa-calendar-times" style="margin-right:.3rem"></i>
+            {{#str}}end_date, tool_tutor_follow{{/str}}:&nbsp;
+            {{#message_cutoffdate}}{{{message_cutoffdate}}}{{/message_cutoffdate}}
+            {{^message_cutoffdate}}{{#userdate}}{{cutoffdate}}, {{#str}}strftimedatetime, core_langconfig{{/str}}{{/userdate}}{{/message_cutoffdate}}
+        </span>
+    </div>
+
+    <details class="dtl-details">
+        <summary>
+            <i class="fa fa-list-alt fa-xs"></i>
+            {{#str}}grading_details, tool_tutor_follow{{/str}}
+        </summary>
+        <div class="dtl-details-body">
+            <table class="dtl-inner-tbl">
+                <thead>
+                    <tr>
+                        <th>{{#str}}student, tool_tutor_follow{{/str}}</th>
+                        <th>{{#str}}submission_date, tool_tutor_follow{{/str}}</th>
+                        <th>{{#str}}grader, tool_tutor_follow{{/str}}</th>
+                        <th>{{#str}}grading_date, tool_tutor_follow{{/str}}</th>
+                        <th>{{#str}}grade, tool_tutor_follow{{/str}}</th>
+                        <th>{{#str}}feedback, tool_tutor_follow{{/str}}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {{#grades_process}}
+                    <tr>
+                        <td><a href="{{{user_url}}}" target="_blank">{{{user}}}</a></td>
+                        <td>
+                            {{#time_created_message_assign}}{{{time_created_message_assign}}}{{/time_created_message_assign}}
+                            {{^time_created_message_assign}}{{#userdate}}{{time_created_assign}}, {{#str}}strftimedatetime, core_langconfig{{/str}}{{/userdate}}{{/time_created_message_assign}}
+                        </td>
+                        <td><a href="{{{usermodified_url}}}" target="_blank">{{{usermodified}}}</a></td>
+                        <td>{{#userdate}}{{timemodified}}, {{#str}}strftimedatetime, core_langconfig{{/str}}{{/userdate}}</td>
+                        <td><span class="dtl-badge dtl-badge-purple">{{grade}}</span></td>
+                        <td class="dtl-feedback">{{{feedbak}}}</td>
+                    </tr>
+                {{/grades_process}}
+                </tbody>
+            </table>
+        </div>
+    </details>
+
+    <details class="dtl-details">
+        <summary>
+            <i class="fa fa-chart-bar fa-xs"></i>
+            {{#str}}grade_distribution, tool_tutor_follow{{/str}}
+        </summary>
+        <div class="dtl-details-body">
+            <div id="stadistics-{{{course_module}}}">
+                <table class="dtl-dist-tbl">
+                    <thead>
+                        <tr>
+                            <th>{{#str}}grade, tool_tutor_follow{{/str}}</th>
+                            <th>{{#str}}assignment_count, tool_tutor_follow{{/str}}</th>
                         </tr>
-                    {{/grades_process}}
+                    </thead>
+                    <tbody>
+                    {{#stadistics_grades}}
+                        <tr>
+                            <td>{{grade}}</td>
+                            <td>{{count}}</td>
+                        </tr>
+                    {{/stadistics_grades}}
                     </tbody>
                 </table>
-            </details>
-        </div>
-        <div class="container pt-2 pb-2 w-100">
-            <details>
-                <summary class="text-info h6">{{#str}} grade_distribution, tool_tutor_follow {{/str}}</summary>
-                <div id="stadistics-{{{course_module}}}">
-                    <div class="row text-white text-center bg-primary font-weight-bold">
-                        <div class="col border">
-                            {{#str}} grade, tool_tutor_follow {{/str}}
-                        </div>
-                        <div class="col border">
-                            {{#str}} assignment_count, tool_tutor_follow {{/str}}
-                        </div>
-                    </div>
-                    {{#stadistics_grades}}
-                        <div class="row text-center">
-                            <div class="col border">
-                                {{grade}}
-                            </div>
-                            <div class="col border">
-                                {{count}}
-                            </div>
-                        </div>
-                    {{/stadistics_grades}}
-                    {{#js}}
-                        require(['jquery', 'core/chart_builder', 'core/chart_output_chartjs'], function($,Builder,
-                        Output) {
-
-                        info={{{json_stadistics_grades}}};
-
-                        let chart = $(`
-                        <div class="container">
-                            <canvas id="chart-{{{course_module}}}" style="height: 300px;"></canvas>
-                        </div>
-                        `);
+                {{#js}}
+                    require(['jquery', 'core/chart_builder', 'core/chart_output_chartjs'], function($, Builder, Output) {
+                        var info = {{{json_stadistics_grades}}};
+                        var chart = $('<div class="container"><canvas id="chart-{{{course_module}}}" style="height:280px"></canvas></div>');
                         $("#stadistics-{{{course_module}}}").append(chart);
-
-                        info.sort((a, b) => a.grade - b.grade);
-
-                        const notes=info.map(item => item.grade);
-                        const count_notes=info.map(item => item.count);
-
-                        const chartData = {
-                        type: 'bar',
-                        series: [{
-                        label: '{{number_grades_string}}',
-                        labels: null,
-                        type: null,
-                        values: count_notes,
-                        colors: [],
-                        axes: {x: null, y: null},
-                        smooth: null
-                        }],
-                        labels: notes,
-                        title: `{{name}}`,
-                        axes: {x: [], y: []},
-                        config_colorset: null,
-                        doughnut: null
+                        info.sort(function(a, b) { return a.grade - b.grade; });
+                        var notes       = info.map(function(item) { return item.grade; });
+                        var count_notes = info.map(function(item) { return item.count; });
+                        var chartData = {
+                            type: 'bar',
+                            series: [{ label: '{{number_grades_string}}', labels: null, type: null, values: count_notes, colors: [], axes: {x: null, y: null}, smooth: null }],
+                            labels: notes, title: '{{name}}',
+                            axes: {x: [], y: []}, config_colorset: null, doughnut: null
                         };
-
-                        const chartArea = $(`#chart-{{{course_module}}}`);
-                        Builder.make(chartData).then(function (chartInstance) {
-                        new Output(chartArea, chartInstance);
+                        Builder.make(chartData).then(function(chartInstance) {
+                            new Output($('#chart-{{{course_module}}}'), chartInstance);
                         });
-
-
-                        });
-                    {{/js}}
-                </div>
-            </details>
+                    });
+                {{/js}}
+            </div>
         </div>
-    {{/assigns}}
+    </details>
+
+    {{#pending_grades}}
+    <details class="dtl-details">
+        <summary>
+            <i class="fa fa-hourglass-half fa-xs"></i>
+            {{#str}}pendinggrading, tool_tutor_follow{{/str}}
+        </summary>
+        <div class="dtl-details-body">
+            <table class="dtl-inner-tbl">
+                <thead>
+                    <tr>
+                        <th>{{#str}}table_header_student, tool_tutor_follow{{/str}}</th>
+                        <th>{{#str}}table_header_idnumber, tool_tutor_follow{{/str}}</th>
+                        <th>{{#str}}submission_date, tool_tutor_follow{{/str}}</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {{#pending_submissions}}
+                    <tr>
+                        <td>{{{student_name}}}</td>
+                        <td>{{{student_idnumber}}}</td>
+                        <td>{{{submission_date_string}}}</td>
+                        <td><a href="{{{url}}}" target="_blank">{{#str}}table_header_view, tool_tutor_follow{{/str}}</a></td>
+                    </tr>
+                {{/pending_submissions}}
+                </tbody>
+            </table>
+        </div>
+    </details>
+    {{/pending_grades}}
+
+    {{#count_without_feedback}}
+    <details class="dtl-details">
+        <summary>
+            <i class="fa fa-comment-slash fa-xs"></i>
+            {{#str}}report_graded_without_feedback, tool_tutor_follow{{/str}}
+        </summary>
+        <div class="dtl-details-body">
+            <table class="dtl-inner-tbl">
+                <thead>
+                    <tr>
+                        <th>{{#str}}table_header_student, tool_tutor_follow{{/str}}</th>
+                        <th>{{#str}}table_header_idnumber, tool_tutor_follow{{/str}}</th>
+                        <th>{{#str}}table_header_grade, tool_tutor_follow{{/str}}</th>
+                        <th>{{#str}}table_header_graded_at, tool_tutor_follow{{/str}}</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {{#without_feedback}}
+                    <tr>
+                        <td>{{{student_name}}}</td>
+                        <td>{{{student_idnumber}}}</td>
+                        <td><span class="dtl-badge dtl-badge-purple">{{grade}}</span></td>
+                        <td>{{{graded_at_string}}}</td>
+                        <td><a href="{{{url}}}" target="_blank">{{#str}}table_header_view, tool_tutor_follow{{/str}}</a></td>
+                    </tr>
+                {{/without_feedback}}
+                </tbody>
+            </table>
+        </div>
+    </details>
+    {{/count_without_feedback}}
+
+</div>
+{{/assigns}}
+
 {{/course}}

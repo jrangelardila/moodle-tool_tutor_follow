@@ -174,6 +174,9 @@ AND gi.itemmodule = 'forum' AND g.finalgrade!=0", ['forumid' => $forum->id]);
         $forum->grades_process = $this->process_grades_info('forum', $forum);
         $forum->stadistics_grades = $this->process_stadistics_grades('forum', $forum);
         $forum->json_stadistics_grades = json_encode($forum->stadistics_grades);
+        $forum->without_feedback = $this->get_forum_without_feedback($forum, $cm);
+        $forum->count_without_feedback = count($forum->without_feedback);
+        $forum->pending_submissions = $this->get_forum_pending_submissions($forum, $cm);
 
         if (!$forum->cutoffdate) {
             $forum->message_cutoffdate = get_string('noclosingdate', 'tool_tutor_follow');
@@ -276,6 +279,9 @@ AND gi.itemmodule = 'forum' AND g.finalgrade!=0", ['forumid' => $forum->id]);
         $assign->grades_process = $this->process_grades_info('assign', $assign);
         $assign->stadistics_grades = $this->process_stadistics_grades('assign', $assign);
         $assign->json_stadistics_grades = json_encode($assign->stadistics_grades);
+        $assign->without_feedback = $this->get_assign_without_feedback($assign, $cm);
+        $assign->count_without_feedback = count($assign->without_feedback);
+        $assign->pending_submissions = $this->get_assign_pending_submissions($assign, $cm);
 
         if (!$assign->cutoffdate) {
             $assign->message_cutoffdate = get_string('noclosingdate', 'tool_tutor_follow');
@@ -285,6 +291,113 @@ AND gi.itemmodule = 'forum' AND g.finalgrade!=0", ['forumid' => $forum->id]);
         }
 
         return $assign;
+    }
+
+    /**
+     * Return assign grades without any meaningful feedback comment.
+     */
+    private function get_assign_without_feedback($assign, $cm)
+    {
+        global $DB;
+
+        $rows = $DB->get_records_sql("
+            SELECT ag.id, ag.userid, ag.grade, ag.timemodified,
+                   u.firstname, u.lastname, u.idnumber
+              FROM {assign_grades} ag
+              JOIN {user} u ON u.id = ag.userid AND u.deleted = 0
+         LEFT JOIN {assignfeedback_comments} afc
+                ON afc.grade = ag.id AND afc.assignment = :assignid2
+             WHERE ag.assignment = :assignid
+               AND ag.grade IS NOT NULL
+               AND ag.grade > 0
+               AND (
+                     afc.id IS NULL
+                     OR afc.commenttext IS NULL
+                     OR TRIM(afc.commenttext) = ''
+                     OR TRIM(afc.commenttext) = '<p></p>'
+                     OR TRIM(afc.commenttext) = '<br>'
+                     OR TRIM(afc.commenttext) = '<p><br></p>'
+               )
+          ORDER BY u.lastname, u.firstname
+        ", ['assignid' => $assign->id, 'assignid2' => $assign->id]);
+
+        $result = [];
+        foreach ($rows as $row) {
+            $entry = new stdClass();
+            $entry->student_name     = $row->firstname . ' ' . $row->lastname;
+            $entry->student_idnumber = $row->idnumber;
+            $entry->grade            = round((float)$row->grade, 1);
+            $entry->timemodified     = (int)$row->timemodified;
+            $entry->graded_at_string = userdate($row->timemodified, get_string('strftimedatetimeshort', 'langconfig'));
+            $entry->url = (new moodle_url('/mod/assign/view.php', [
+                'id'     => $cm->id,
+                'action' => 'grade',
+                'userid' => $row->userid,
+            ]))->out(false);
+            $result[] = $entry;
+        }
+        return $result;
+    }
+
+    /**
+     * Return forum grades where the teacher never replied in the student's discussion.
+     */
+    private function get_forum_without_feedback($forum, $cm)
+    {
+        global $DB;
+
+        $itemnumber = (!empty($forum->grade_forum)) ? 1 : 0;
+
+        $rows = $DB->get_records_sql("
+            SELECT gg.id, gg.userid, gg.finalgrade AS grade, gg.timemodified, gg.usermodified,
+                   u.firstname, u.lastname, u.idnumber,
+                   (SELECT MIN(fd2.id) FROM {forum_discussions} fd2
+                     WHERE fd2.forum = :forumid2 AND fd2.userid = gg.userid) AS discussion_id
+              FROM {grade_items} gi
+              JOIN {grade_grades} gg ON gg.itemid = gi.id
+              JOIN {user} u ON u.id = gg.userid AND u.deleted = 0
+             WHERE gi.itemmodule = 'forum'
+               AND gi.itemtype   = 'mod'
+               AND gi.iteminstance = :forumid
+               AND gi.itemnumber   = :itemnumber
+               AND gg.finalgrade IS NOT NULL
+               AND gg.finalgrade > 0
+               AND gg.usermodified > 0
+               AND EXISTS (
+                     SELECT 1 FROM {forum_discussions} fd
+                      WHERE fd.forum = :forumid3 AND fd.userid = gg.userid
+               )
+               AND NOT EXISTS (
+                     SELECT 1 FROM {forum_discussions} fd
+                      JOIN {forum_posts} fp ON fp.discussion = fd.id AND fp.userid = gg.usermodified
+                     WHERE fd.forum = :forumid4 AND fd.userid = gg.userid
+               )
+          ORDER BY u.lastname, u.firstname
+        ", [
+            'forumid'    => $forum->id,
+            'forumid2'   => $forum->id,
+            'forumid3'   => $forum->id,
+            'forumid4'   => $forum->id,
+            'itemnumber' => $itemnumber,
+        ]);
+
+        $result = [];
+        foreach ($rows as $row) {
+            $entry = new stdClass();
+            $entry->student_name     = $row->firstname . ' ' . $row->lastname;
+            $entry->student_idnumber = $row->idnumber;
+            $entry->grade            = round((float)$row->grade, 1);
+            $entry->timemodified     = (int)$row->timemodified;
+            $entry->graded_at_string = userdate($row->timemodified, get_string('strftimedatetimeshort', 'langconfig'));
+            if (!empty($row->discussion_id)) {
+                $url = new moodle_url('/mod/forum/discuss.php', ['d' => $row->discussion_id]);
+            } else {
+                $url = new moodle_url('/mod/forum/view.php', ['id' => $cm->id]);
+            }
+            $entry->url = $url->out(false);
+            $result[] = $entry;
+        }
+        return $result;
     }
 
     /**
@@ -339,7 +452,7 @@ AND gi.itemmodule = 'forum' AND g.finalgrade!=0", ['forumid' => $forum->id]);
                     ], 'timemodified');
                     $info->time_created_assign = $submission->timemodified;
                     if ($info->time_created_assign == 0) {
-                        $info->time_created_message_assign = 'Sin entrega';
+                        $info->time_created_message_assign = get_string('no_submission', 'tool_tutor_follow');
                     }
                     //fedback
                     $context = context_module::instance($cm->id);
@@ -356,7 +469,7 @@ AND gi.itemmodule = 'forum' AND g.finalgrade!=0", ['forumid' => $forum->id]);
                     ]);
                     $info->time_created_forum = $post->created;
                     if ($info->time_created_forum == 0) {
-                        $info->time_created_message_forum = 'Sin entrega';
+                        $info->time_created_message_forum = get_string('no_submission', 'tool_tutor_follow');
                     }
                     //Feedback for forums
                     $post_teacher = $DB->get_record('forum_posts', [
@@ -380,5 +493,94 @@ AND gi.itemmodule = 'forum' AND g.finalgrade!=0", ['forumid' => $forum->id]);
         });
 
         return $grades_info;
+    }
+
+    private function get_assign_pending_submissions($assign, $cm)
+    {
+        global $DB;
+
+        $rows = $DB->get_records_sql("
+            SELECT asub.id, asub.userid, asub.timemodified,
+                   u.firstname, u.lastname, u.idnumber
+              FROM {assign_submission} asub
+              JOIN {user} u ON u.id = asub.userid AND u.deleted = 0
+         LEFT JOIN {assign_grades} ag
+                   ON ag.assignment = asub.assignment
+                  AND ag.userid     = asub.userid
+                  AND ag.grade >= 0
+             WHERE asub.assignment = :assignid
+               AND asub.status = 'submitted'
+               AND asub.latest = 1
+               AND ag.id IS NULL
+             ORDER BY u.lastname, u.firstname
+        ", ['assignid' => $assign->id]);
+
+        $result = [];
+        foreach ($rows as $row) {
+            $entry = new stdClass();
+            $entry->student_name           = $row->firstname . ' ' . $row->lastname;
+            $entry->student_idnumber       = $row->idnumber;
+            $entry->time_created           = (int)$row->timemodified;
+            $entry->submission_date_string = userdate($row->timemodified, get_string('strftimedatetimeshort', 'langconfig'));
+            $entry->url = (new moodle_url('/mod/assign/view.php', [
+                'id'     => $cm->id,
+                'action' => 'grade',
+                'userid' => $row->userid,
+            ]))->out(false);
+            $result[] = $entry;
+        }
+        return $result;
+    }
+
+    private function get_forum_pending_submissions($forum, $cm)
+    {
+        global $DB;
+
+        $itemnumber = (!empty($forum->grade_forum)) ? 1 : 0;
+
+        $rows = $DB->get_records_sql("
+            SELECT fd.userid,
+                   u.firstname, u.lastname, u.idnumber,
+                   fd.id AS discussion_id,
+                   (SELECT MIN(fp2.created) FROM {forum_posts} fp2
+                     WHERE fp2.discussion = fd.id AND fp2.parent = 0) AS time_created
+              FROM {forum_discussions} fd
+              JOIN {user} u ON u.id = fd.userid AND u.deleted = 0
+         LEFT JOIN {grade_items} gi
+                   ON gi.itemmodule  = 'forum'
+                  AND gi.iteminstance = :forumid2
+                  AND gi.itemnumber   = :itemnumber
+         LEFT JOIN {grade_grades} gg
+                   ON gg.itemid = gi.id
+                  AND gg.userid = fd.userid
+                  AND gg.finalgrade IS NOT NULL
+                  AND gg.finalgrade > 0
+             WHERE fd.forum = :forumid
+               AND gg.id IS NULL
+             ORDER BY u.lastname, u.firstname
+        ", [
+            'forumid'    => $forum->id,
+            'forumid2'   => $forum->id,
+            'itemnumber' => $itemnumber,
+        ]);
+
+        $result = [];
+        foreach ($rows as $row) {
+            $entry = new stdClass();
+            $entry->student_name           = $row->firstname . ' ' . $row->lastname;
+            $entry->student_idnumber       = $row->idnumber;
+            $entry->time_created           = (int)($row->time_created ?? 0);
+            $entry->submission_date_string = $entry->time_created
+                ? userdate($entry->time_created, get_string('strftimedatetimeshort', 'langconfig'))
+                : '';
+            if (!empty($row->discussion_id)) {
+                $url = new moodle_url('/mod/forum/discuss.php', ['d' => $row->discussion_id]);
+            } else {
+                $url = new moodle_url('/mod/forum/view.php', ['id' => $cm->id]);
+            }
+            $entry->url = $url->out(false);
+            $result[] = $entry;
+        }
+        return $result;
     }
 }

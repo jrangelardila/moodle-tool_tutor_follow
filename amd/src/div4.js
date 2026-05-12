@@ -17,7 +17,7 @@
  * Handles the dashboard interactions for tutor follow-up data.
  *
  * @module     tool_tutor_follow/div4
- * @package    tool_tutor_follow
+ * @package
  * @copyright  2025 Jhon Rangel Ardila
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -30,7 +30,7 @@ define([
     'core/str',
     'core/yui',
     'core_form/modalform',
-], function ($, ajax, notification, chartModule, Str, Y, ModalForm) {
+], function ($, ajax, notification, chartModule, Str) {
     return {
         init: function () {
             $(".more-info").click(async function (event) {
@@ -50,7 +50,7 @@ define([
             }.bind(this));
         },
 
-        executeStudentGraph: async function (obj, idnumber) {
+        executeStudentGraph: async function (obj) {
             $(".data-body").empty();
 
             const strings = [
@@ -122,7 +122,7 @@ define([
             }.bind(this));
         },
 
-        calification_btn: function (e) {
+        calification_btn: function () {
             $(".data-body").fadeOut(400, function () {
                 $(this).empty().fadeIn(400);
             });

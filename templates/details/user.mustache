@@ -1,0 +1,129 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+    @template   tool_tutor_follow/details/user
+    @copyright  2025 Jhon Rangel Ardila
+    @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+}}
+
+{{! User hero card }}
+<div class="dtl-hero">
+    <p class="dtl-hero-meta">
+        {{#str}}lastaccess, tool_tutor_follow{{/str}}: <strong>{{{lastacces_text}}}</strong>
+        &nbsp;·&nbsp; {{{email}}}
+    </p>
+    <a class="dtl-hero-title" href="{{{profile_url}}}" target="_blank">
+        <img src="{{{picture}}}"
+             style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.3);flex-shrink:0">
+        &nbsp;{{{name}}}
+    </a>
+    <div class="dtl-kpi-row">
+        <div class="dtl-kpi-pill">
+            <i class="fa fa-book-open"></i>
+            <span class="dtl-kpi-val">{{kpi_numcourses}}</span>
+            <span>{{#str}}courses, tool_tutor_follow{{/str}}</span>
+        </div>
+        <div class="dtl-kpi-pill">
+            <i class="fa fa-users"></i>
+            <span class="dtl-kpi-val">{{kpi_students}}</span>
+            <span>{{#str}}students, tool_tutor_follow{{/str}}</span>
+        </div>
+        <div class="dtl-kpi-pill">
+            <i class="fa fa-tasks"></i>
+            <span class="dtl-kpi-val">{{kpi_assigns_count}}</span>
+            <span>{{#str}}assignments, tool_tutor_follow{{/str}}</span>
+        </div>
+        <div class="dtl-kpi-pill">
+            <i class="fa fa-comments-alt"></i>
+            <span class="dtl-kpi-val">{{kpi_forums_count}}</span>
+            <span>{{#str}}forums, tool_tutor_follow{{/str}}</span>
+        </div>
+        <div class="dtl-kpi-pill">
+            <i class="fa fa-paper-plane"></i>
+            <span class="dtl-kpi-val">{{kpi_submissions}}</span>
+            <span>{{#str}}submissions, tool_tutor_follow{{/str}}</span>
+        </div>
+        <div class="dtl-kpi-pill">
+            <i class="fa fa-comments"></i>
+            <span class="dtl-kpi-val">{{kpi_replicas}}</span>
+            <span>{{#str}}contributions, tool_tutor_follow{{/str}}</span>
+        </div>
+        <div class="dtl-kpi-pill dtl-kpi-success">
+            <i class="fa fa-check-circle"></i>
+            <span class="dtl-kpi-val">{{kpi_graded}}</span>
+            <span>{{#str}}graded, tool_tutor_follow{{/str}}</span>
+        </div>
+        <div class="dtl-kpi-pill dtl-kpi-danger">
+            <i class="fa fa-clock"></i>
+            <span class="dtl-kpi-val">{{kpi_pending}}</span>
+            <span>{{#str}}pendinggrading, tool_tutor_follow{{/str}}</span>
+        </div>
+        <div class="dtl-kpi-pill dtl-kpi-warning">
+            <i class="fa fa-comment-slash"></i>
+            <span class="dtl-kpi-val">{{kpi_without_feedback}}</span>
+            <span>{{#str}}report_graded_without_feedback, tool_tutor_follow{{/str}}</span>
+        </div>
+        <div class="dtl-kpi-pill dtl-kpi-success">
+            <i class="fa fa-percent"></i>
+            <span class="dtl-kpi-val">{{kpi_pct_graded}}%</span>
+            <span>{{#str}}graded, tool_tutor_follow{{/str}}</span>
+        </div>
+        <div class="dtl-kpi-pill">
+            <i class="fa fa-wifi"></i>
+            <span class="dtl-kpi-val">{{kpi_dedication_display}}</span>
+            <span>{{#str}}dedicationtime, tool_tutor_follow{{/str}}</span>
+        </div>
+    </div>
+</div>
+
+{{! Dedication per course }}
+<div class="dtl-card">
+    <div class="dtl-card-head">
+        <div class="dtl-card-head-icon bg-secondary"><i class="fa fa-clock"></i></div>
+        {{#str}}dedicationpercourse, tool_tutor_follow{{/str}}
+    </div>
+    <div class="dtl-card-body">
+        {{#has_dedication}}
+        <div style="overflow-x:auto;margin-bottom:1rem">
+            <table class="dtl-tbl">
+                <thead>
+                    <tr>
+                        <th>{{#str}}shortname, tool_tutor_follow{{/str}}</th>
+                        <th>{{#str}}name, tool_tutor_follow{{/str}}</th>
+                        <th>{{#str}}accesses, tool_tutor_follow{{/str}}</th>
+                        <th>{{#str}}dedicationminutes, tool_tutor_follow{{/str}}</th>
+                        <th>{{#str}}average_dedication, tool_tutor_follow{{/str}}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {{#dedication_courses}}
+                    <tr>
+                        <td><strong>{{{course_name}}}</strong></td>
+                        <td>{{{course_fullname}}}</td>
+                        <td>{{dedication_sessions}}</td>
+                        <td>{{dedication_minutes}}</td>
+                        <td>{{dedication_average}}</td>
+                    </tr>
+                {{/dedication_courses}}
+                </tbody>
+            </table>
+        </div>
+        {{/has_dedication}}
+        {{^has_dedication}}
+        <p class="text-muted"><i class="fa fa-info-circle mr-1"></i>{{#str}}no_dedication_data, tool_tutor_follow{{/str}}</p>
+        {{/has_dedication}}
+    </div>
+</div>

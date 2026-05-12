@@ -4,7 +4,7 @@
  * absolute) stays reachable at the bottom of the viewport.
  *
  * @module     tool_tutor_follow/hide_footer
- * @package    tool_tutor_follow
+ * @package
  * @copyright  2026 Jhon Rangel Ardila
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */

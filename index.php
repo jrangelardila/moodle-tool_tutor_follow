@@ -47,6 +47,16 @@ if ((int)optional_param('i', 1, PARAM_INT) === 3) {
 
 echo $OUTPUT->header();
 
+echo '
+<style>
+.dtl-hero{background:#000;border-radius:16px;padding:1.75rem 2rem;color:#fff;margin-bottom:1.5rem;position:relative;overflow:hidden}
+.dtl-hero::before{content:"";position:absolute;inset:0;background:rgba(0,0,0,.18);pointer-events:none}
+.dtl-hero>*{position:relative}
+.dtl-hero-meta{font-size:.78rem;color:rgba(255,255,255,.5);margin-bottom:.6rem}
+.dtl-hero-meta strong{color:rgba(255,255,255,.8)}
+.dtl-hero-title{font-size:1.35rem;font-weight:800;color:#fff;display:inline-flex;align-items:center;gap:.5rem}
+</style>';
+
 echo html_writer::tag('img', "", [
     "src" => new moodle_url('/admin/tool/tutor_follow/img.png'),
     'class' => 'w-100'

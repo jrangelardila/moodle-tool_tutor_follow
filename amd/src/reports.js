@@ -17,7 +17,7 @@
  * Handles the dashboard interactions for tutor follow-up data.
  *
  * @module     tool_tutor_follow/reports
- * @package    tool_tutor_follow
+ * @package
  * @copyright  2025 Jhon Rangel Ardila
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
