@@ -252,3 +252,9 @@ $string['export_sheet_details'] = 'Detalles calificación';
 $string['export_sheet_pending'] = 'Sin calificar';
 $string['viewbycourse'] = 'Por cursos';
 $string['viewbyuser'] = 'Por docente';
+
+$string['regenerate_heading'] = 'Renovar información';
+$string['regenerate_desc'] = 'Borra todos los reportes almacenados y vuelve a ejecutar los reportes habilitados con los datos actuales. Úsalo para renovar la información sin esperar a la siguiente ejecución programada. Los reportes ya enviados también se borran.';
+$string['regenerate_button'] = 'Borrar y regenerar reportes';
+$string['regenerate_confirm'] = '¿Borrar los {$a} reportes almacenados y volver a generarlos? Se eliminarán también los que ya fueron enviados por correo. Esta acción no se puede deshacer.';
+$string['regenerate_success'] = 'Información renovada: {$a->deleted} reporte(s) borrado(s), {$a->executed} reporte(s) ejecutado(s), {$a->created} reporte(s) generado(s).';

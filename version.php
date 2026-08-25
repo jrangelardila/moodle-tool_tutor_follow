@@ -28,7 +28,7 @@ $plugin->component = 'tool_tutor_follow';
 $plugin->dependencies = [
     'block_dedication' => 2023112001
 ];
-$plugin->release = '0.1.9';
-$plugin->version = 2026082500;
+$plugin->release = '0.2.0';
+$plugin->version = 2026082501;
 $plugin->requires = 2021051700;
 $plugin->maturity = MATURITY_STABLE;

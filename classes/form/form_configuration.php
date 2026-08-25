@@ -210,6 +210,23 @@ class form_configuration extends \moodleform
 
         $mform->addElement('submit', 'submitbutton', get_string('savechanges'));
 
+        $regenerateurl = new \moodle_url('/admin/tool/tutor_follow/index.php', [
+            'i' => 5,
+            'action' => 'regenerate',
+            'sesskey' => sesskey(),
+        ]);
+
+        $mform->addElement(
+            'html',
+            '<hr><h3 class="text-primary">' . get_string('regenerate_heading', 'tool_tutor_follow') . '</h3>'
+            . '<p class="text-muted">' . get_string('regenerate_desc', 'tool_tutor_follow') . '</p>'
+            . \html_writer::link(
+                $regenerateurl,
+                '<i class="fa fa-sync-alt mr-1"></i>' . get_string('regenerate_button', 'tool_tutor_follow'),
+                ['class' => 'btn btn-danger mb-3']
+            )
+        );
+
         $reports = json_decode(get_config('tool_tutor_follow', 'reports_enable'));
         foreach ($reports as $reportname => $enabled) {
             $mform->setDefault("report_enabled[$reportname]", $enabled);

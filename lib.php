@@ -30,6 +30,69 @@ use tool_tutor_follow\local\report_teacher;
 use tool_tutor_follow\task\data_user_tutor;
 
 /**
+ * Descarta la traza de los reportes.
+ *
+ * @param string $string
+ * @param string $eol
+ * @return void
+ */
+function tool_tutor_follow_mtrace_discard($string, $eol = "\n")
+{
+}
+
+/**
+ * Vacía la tabla de reportes y vuelve a ejecutar los reportes habilitados.
+ *
+ * @throws dml_exception
+ */
+function tool_tutor_follow_regenerate_reports(): stdClass
+{
+    global $DB, $CFG;
+
+    core_php_time_limit::raise();
+    raise_memory_limit(MEMORY_EXTRA);
+
+    $result = new stdClass();
+    $result->deleted = $DB->count_records('tool_tutor_follow_report');
+    $result->executed = 0;
+
+    $DB->delete_records('tool_tutor_follow_report');
+
+    $categories = json_decode(get_config('tool_tutor_follow', 'categories'));
+    $roles = json_decode(get_config('tool_tutor_follow', 'roles'));
+    $reports = json_decode(get_config('tool_tutor_follow', 'reports_enable'));
+
+    $previouswrapper = $CFG->mtrace_wrapper ?? null;
+    if (!CLI_SCRIPT) {
+        $CFG->mtrace_wrapper = 'tool_tutor_follow_mtrace_discard';
+    }
+
+    try {
+        foreach ((array)$reports as $reportname => $enabled) {
+            if (!$enabled) {
+                continue;
+            }
+            $classname = "\\tool_tutor_follow\\report\\" . $reportname;
+            if (!class_exists($classname)) {
+                continue;
+            }
+            (new $classname())->execute($categories, $roles);
+            $result->executed++;
+        }
+    } finally {
+        if ($previouswrapper === null) {
+            unset($CFG->mtrace_wrapper);
+        } else {
+            $CFG->mtrace_wrapper = $previouswrapper;
+        }
+    }
+
+    $result->created = $DB->count_records('tool_tutor_follow_report');
+
+    return $result;
+}
+
+/**
  * Return localfile
  *
  * @param $course

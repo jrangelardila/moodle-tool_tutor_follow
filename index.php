@@ -129,6 +129,34 @@ switch ($option) {
         tool_tutor_follow_option4();
         break;
     case 5:
+        if (optional_param('action', '', PARAM_ALPHA) === 'regenerate' && confirm_sesskey()) {
+            $settingsurl = new moodle_url('/admin/tool/tutor_follow/index.php', ['i' => 5]);
+
+            if (!optional_param('confirm', 0, PARAM_BOOL)) {
+                $continueurl = new moodle_url('/admin/tool/tutor_follow/index.php', [
+                    'i' => 5,
+                    'action' => 'regenerate',
+                    'confirm' => 1,
+                    'sesskey' => sesskey(),
+                ]);
+                echo $OUTPUT->confirm(
+                    get_string(
+                        'regenerate_confirm',
+                        'tool_tutor_follow',
+                        $DB->count_records('tool_tutor_follow_report')
+                    ),
+                    new \core\output\single_button($continueurl, get_string('regenerate_button', 'tool_tutor_follow'), 'post'),
+                    $settingsurl
+                );
+                echo $OUTPUT->footer();
+                exit;
+            }
+
+            $regenerated = tool_tutor_follow_regenerate_reports();
+            \core\notification::success(get_string('regenerate_success', 'tool_tutor_follow', $regenerated));
+            redirect($settingsurl);
+        }
+
         $form = new \tool_tutor_follow\form\form_configuration(
             action: new moodle_url('/admin/tool/tutor_follow/index.php?i=5')
         );
