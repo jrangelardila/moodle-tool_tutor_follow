@@ -518,20 +518,20 @@ class list_overdue_activities extends report_base
                 ON r.id = ra.roleid
                 AND r.shortname = 'student'
 
-            -- Sin calificación (grade_book)
-           LEFT JOIN {grade_items} gi
-    ON gi.itemtype = 'mod'
-    AND gi.itemmodule = 'forum'
-    AND gi.iteminstance = f.id
-    AND gi.courseid = f.course
-    AND gi.itemnumber = CASE WHEN f.grade_forum > 0 THEN 1 ELSE 0 END
-
-LEFT JOIN {grade_grades} gg
-    ON gg.itemid = gi.id
-    AND gg.userid = u.id
-            
             WHERE fd.forum {$forum_sql}
-AND gg.id IS NULL            
+              AND NOT EXISTS (
+                  SELECT 1
+                    FROM {grade_items} gi
+                    JOIN {grade_grades} gg ON gg.itemid = gi.id
+                   WHERE gi.itemmodule   = 'forum'
+                     AND gi.itemtype     = 'mod'
+                     AND gi.iteminstance = f.id
+                     AND gi.courseid     = f.course
+                     AND gi.itemnumber  IN (0, 1)
+                     AND gg.userid       = u.id
+                     AND gg.finalgrade IS NOT NULL
+                     AND gg.finalgrade   > 0
+              )
             ORDER BY fd.forum, u.lastname, u.firstname
         ";
 

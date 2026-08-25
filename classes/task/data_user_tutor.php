@@ -84,6 +84,9 @@ class data_user_tutor extends \core\task\scheduled_task
           JOIN {enrol} e ON e.courseid = c.id
           JOIN {user_enrolments} ue ON ue.enrolid = e.id AND ue.userid = u.id
          WHERE ue.status = 0
+           AND e.status = 0
+           AND u.deleted = 0
+           AND u.suspended = 0
            AND c.category $category_sql
            AND r.shortname $roles_sql";
         $users = $DB->get_records_sql($sql_users, $params);
@@ -100,6 +103,9 @@ class data_user_tutor extends \core\task\scheduled_task
           JOIN {enrol} e ON e.courseid = c.id
           JOIN {user_enrolments} ue ON ue.enrolid = e.id AND ue.userid = u.id
          WHERE ue.status = 0
+           AND e.status = 0
+           AND u.deleted = 0
+           AND u.suspended = 0
            AND c.category $category_sql
            AND r.shortname $roles_sql";
 

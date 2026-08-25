@@ -122,8 +122,8 @@ class graded_without_feedback extends report_base
             JOIN {course} c ON c.id = a.course
             JOIN {course_modules} cm ON cm.course = c.id AND cm.instance = a.id
             JOIN {modules} m ON m.id = cm.module AND m.name = 'assign'
-            JOIN {user} u ON u.id = ag.userid AND u.deleted = 0
-            JOIN {user} t ON t.id = ag.grader AND t.deleted = 0
+            JOIN {user} u ON u.id = ag.userid AND u.deleted = 0 AND u.suspended = 0
+            JOIN {user} t ON t.id = ag.grader AND t.deleted = 0 AND t.suspended = 0
 
             JOIN {context} ctx ON ctx.contextlevel = 50 AND ctx.instanceid = c.id
             JOIN {role_assignments} ra ON ra.contextid = ctx.id AND ra.userid = t.id
@@ -136,6 +136,24 @@ class graded_without_feedback extends report_base
             WHERE c.category {$category_sql}
               AND ag.grade IS NOT NULL
               AND ag.grade > 0
+              AND EXISTS (
+                    SELECT 1
+                      FROM {user_enrolments} ue
+                      JOIN {enrol} e ON e.id = ue.enrolid
+                     WHERE ue.userid = u.id
+                       AND e.courseid = c.id
+                       AND ue.status = 0
+                       AND e.status = 0
+              )
+              AND EXISTS (
+                    SELECT 1
+                      FROM {user_enrolments} uet
+                      JOIN {enrol} et ON et.id = uet.enrolid
+                     WHERE uet.userid = t.id
+                       AND et.courseid = c.id
+                       AND uet.status = 0
+                       AND et.status = 0
+              )
               AND (
                     afc.id IS NULL
                     OR afc.commenttext IS NULL
@@ -211,8 +229,8 @@ class graded_without_feedback extends report_base
             JOIN {course} c ON c.id = f.course
             JOIN {course_modules} cm ON cm.course = c.id AND cm.instance = f.id
             JOIN {modules} m ON m.id = cm.module AND m.name = 'forum'
-            JOIN {user} u ON u.id = gg.userid AND u.deleted = 0
-            JOIN {user} t ON t.id = gg.usermodified AND t.deleted = 0
+            JOIN {user} u ON u.id = gg.userid AND u.deleted = 0 AND u.suspended = 0
+            JOIN {user} t ON t.id = gg.usermodified AND t.deleted = 0 AND t.suspended = 0
 
             JOIN {context} ctx ON ctx.contextlevel = 50 AND ctx.instanceid = c.id
             JOIN {role_assignments} ra ON ra.contextid = ctx.id AND ra.userid = t.id
@@ -222,6 +240,24 @@ class graded_without_feedback extends report_base
               AND gg.finalgrade IS NOT NULL
               AND gg.finalgrade > 0
               AND gg.usermodified > 0
+              AND EXISTS (
+                    SELECT 1
+                      FROM {user_enrolments} ue
+                      JOIN {enrol} e ON e.id = ue.enrolid
+                     WHERE ue.userid = u.id
+                       AND e.courseid = c.id
+                       AND ue.status = 0
+                       AND e.status = 0
+              )
+              AND EXISTS (
+                    SELECT 1
+                      FROM {user_enrolments} uet
+                      JOIN {enrol} et ON et.id = uet.enrolid
+                     WHERE uet.userid = t.id
+                       AND et.courseid = c.id
+                       AND uet.status = 0
+                       AND et.status = 0
+              )
               AND EXISTS (
                     SELECT 1
                       FROM {forum_discussions} fd

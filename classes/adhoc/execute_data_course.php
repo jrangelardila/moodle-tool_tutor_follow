@@ -46,6 +46,57 @@ class execute_data_course extends adhoc_task
     private $total_grades = 0;
     private $total_pending_grades = 0;
 
+    /** @var array|null Ids de matriculados activos del curso, resueltos una sola vez. */
+    private $activeuserids = null;
+
+    /**
+     * Ids de los usuarios con matrícula activa en el curso.
+     * @return array Lista de userids.
+     * @throws \dml_exception
+     */
+    private function get_active_userids(): array
+    {
+        global $DB;
+
+        if ($this->activeuserids !== null) {
+            return $this->activeuserids;
+        }
+
+        $this->activeuserids = $DB->get_fieldset_sql("
+            SELECT DISTINCT u.id
+              FROM {user_enrolments} ue
+              JOIN {enrol} e ON e.id = ue.enrolid
+              JOIN {user} u ON u.id = ue.userid
+             WHERE e.courseid = :courseid
+               AND ue.status = 0
+               AND e.status = 0
+               AND u.deleted = 0
+               AND u.suspended = 0
+        ", ['courseid' => $this->get_custom_data()->id]);
+
+        return $this->activeuserids;
+    }
+
+    /**
+     * Parametros SQL
+     *
+     * @param string $prefix Prefijo de los parámetros nombrados.
+     * @return array [fragmento SQL, parámetros]
+     * @throws \dml_exception
+     */
+    private function get_active_users_sql(string $prefix = 'au'): array
+    {
+        global $DB;
+
+        $userids = $this->get_active_userids();
+
+        if (empty($userids)) {
+             return ['= :' . $prefix . 'none', [$prefix . 'none' => -1]];
+        }
+
+        return $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED, $prefix);
+    }
+
     /**
      * @inheritDoc
      * @throws \dml_exception
@@ -141,28 +192,50 @@ class execute_data_course extends adhoc_task
     {
         global $DB;
 
+        list($activesql, $activeparams) = $this->get_active_users_sql();
+
         $forum->total_posts = $DB->count_records_sql(
             "SELECT COUNT(DISTINCT userid)
-     FROM {forum_discussions} 
-     WHERE forum = :forumid",
-            ['forumid' => $forum->id]
+     FROM {forum_discussions}
+     WHERE forum = :forumid
+       AND userid $activesql",
+            array_merge(['forumid' => $forum->id], $activeparams)
         );
 
         $this->total_posts += $forum->total_posts;
 
         $forum->graded_posts = $DB->count_records_sql("
-            SELECT COUNT(g.userid)
-            FROM {grade_items} gi
-JOIN {grade_grades} g ON gi.id = g.itemid
-WHERE gi.iteminstance = :forumid
-AND gi.itemmodule = 'forum' AND g.finalgrade!=0", ['forumid' => $forum->id]);
-
+            SELECT COUNT(DISTINCT gg.userid)
+              FROM {grade_items} gi
+              JOIN {grade_grades} gg ON gg.itemid = gi.id
+             WHERE gi.itemmodule   = 'forum'
+               AND gi.iteminstance = :forumid
+               AND gi.itemnumber  IN (0, 1)
+               AND gg.finalgrade IS NOT NULL
+               AND gg.finalgrade   > 0
+               AND gg.userid $activesql",
+            array_merge(['forumid' => $forum->id], $activeparams));
 
         $this->total_grades += $forum->graded_posts;
 
-        $forum->pending_grades = $forum->total_posts - $forum->graded_posts;
-
-        if ($forum->pending_grades < 0) $forum->pending_grades = 0;
+        $forum->pending_grades = $DB->count_records_sql("
+            SELECT COUNT(*) FROM (
+                SELECT DISTINCT fd.userid
+                  FROM {forum_discussions} fd
+                 WHERE fd.forum = :forumid
+                   AND fd.userid $activesql
+                   AND NOT EXISTS (
+                       SELECT 1
+                         FROM {grade_items} gi
+                         JOIN {grade_grades} gg ON gg.itemid = gi.id
+                        WHERE gi.itemmodule   = 'forum'
+                          AND gi.iteminstance = :forumid2
+                          AND gi.itemnumber  IN (0, 1)
+                          AND gg.userid       = fd.userid
+                          AND gg.finalgrade IS NOT NULL
+                          AND gg.finalgrade   > 0
+                   )
+            ) t", array_merge(['forumid' => $forum->id, 'forumid2' => $forum->id], $activeparams));
 
         $this->total_pending_grades += $forum->pending_grades;
 
@@ -192,26 +265,51 @@ AND gi.itemmodule = 'forum' AND g.finalgrade!=0", ['forumid' => $forum->id]);
      * @return array
      * @throws \coding_exception
      */
-    private function get_forum_itemnumber(string $type, $module): int
+    /**
+     * Notas finales por usuario del módulo. Para foros combina los DOS grade
+     * items (valoraciones = itemnumber 0, foro completo = 1) tomando por usuario
+     * la nota positiva (la mayor si tuviera en ambos), de modo que estadísticas y
+     * listado de calificaciones no dependan de un único item elegido por un CASE.
+     *
+     * @param string $type
+     * @param \stdClass $cm
+     * @return array [userid => grade_grade]
+     */
+    private function get_module_final_grades(string $type, $cm): array
     {
-        if ($type === 'forum' && !empty($module->grade_forum)) {
-            return 1; // Whole forum grading enabled
+        $itemnumbers = ($type === 'forum') ? [0, 1] : [0];
+        // get_final() devuelve toda la libreta del item, incluidas las notas de
+        // matrículas suspendidas; se descartan aquí para que estadísticas y
+        // listado de calificaciones sólo reflejen a los matriculados activos.
+        $active = array_flip($this->get_active_userids());
+        $merged = [];
+        foreach ($itemnumbers as $itemnumber) {
+            $grade_item = grade_item::fetch([
+                'courseid'     => $cm->course,
+                'iteminstance' => $cm->instance,
+                'itemmodule'   => $type,
+                'itemnumber'   => $itemnumber,
+            ]);
+            if (!$grade_item) {
+                continue;
+            }
+            foreach ($grade_item->get_final() as $userid => $grade_data) {
+                if (empty($grade_data->finalgrade) || !isset($active[$userid])) {
+                    continue;
+                }
+                if (!isset($merged[$userid]) || $grade_data->finalgrade > $merged[$userid]->finalgrade) {
+                    $merged[$userid] = $grade_data;
+                }
+            }
         }
-        return 0;
+        return $merged;
     }
 
     private function process_stadistics_grades(string $type, $module)
     {
         $cm = get_coursemodule_from_instance($type, $module->id);
 
-        $grade_item = grade_item::fetch([
-            'courseid'     => $cm->course,
-            'iteminstance' => $cm->instance,
-            'itemmodule'   => $type,
-            'itemnumber'   => $this->get_forum_itemnumber($type, $module),
-        ]);
-
-        $grades = $grade_item->get_final();
+        $grades = $this->get_module_final_grades($type, $cm);
         $statistics = [];
         foreach ($grades as $userid => $grade_data) {
             if ($grade_data->finalgrade) {
@@ -251,16 +349,18 @@ AND gi.itemmodule = 'forum' AND g.finalgrade!=0", ['forumid' => $forum->id]);
     {
         global $DB;
 
-        $assign->total_submissions = $DB->count_records('assign_submission', [
-            'assignment' => $assign->id,
-            'status' => 'submitted'
-        ]);
+        list($activesql, $activeparams) = $this->get_active_users_sql();
+
+        $assign->total_submissions = $DB->count_records_select('assign_submission',
+            "assignment = :assignment AND status = 'submitted' AND userid $activesql",
+            array_merge(['assignment' => $assign->id], $activeparams)
+        );
 
         $this->total_assignments += $assign->total_submissions;
 
         $assign->graded_submissions = $DB->count_records_select('assign_grades',
-            'assignment = :assignment AND grade >= 0',
-            ['assignment' => $assign->id]
+            "assignment = :assignment AND grade >= 0 AND userid $activesql",
+            array_merge(['assignment' => $assign->id], $activeparams)
         );
 
         $assign->pending_grades = $assign->total_submissions - $assign->graded_submissions;
@@ -300,6 +400,8 @@ AND gi.itemmodule = 'forum' AND g.finalgrade!=0", ['forumid' => $forum->id]);
     {
         global $DB;
 
+        list($activesql, $activeparams) = $this->get_active_users_sql();
+
         $rows = $DB->get_records_sql("
             SELECT ag.id, ag.userid, ag.grade, ag.timemodified,
                    u.firstname, u.lastname, u.idnumber
@@ -308,6 +410,7 @@ AND gi.itemmodule = 'forum' AND g.finalgrade!=0", ['forumid' => $forum->id]);
          LEFT JOIN {assignfeedback_comments} afc
                 ON afc.grade = ag.id AND afc.assignment = :assignid2
              WHERE ag.assignment = :assignid
+               AND ag.userid $activesql
                AND ag.grade IS NOT NULL
                AND ag.grade > 0
                AND (
@@ -319,7 +422,7 @@ AND gi.itemmodule = 'forum' AND g.finalgrade!=0", ['forumid' => $forum->id]);
                      OR TRIM(afc.commenttext) = '<p><br></p>'
                )
           ORDER BY u.lastname, u.firstname
-        ", ['assignid' => $assign->id, 'assignid2' => $assign->id]);
+        ", array_merge(['assignid' => $assign->id, 'assignid2' => $assign->id], $activeparams));
 
         $result = [];
         foreach ($rows as $row) {
@@ -346,7 +449,7 @@ AND gi.itemmodule = 'forum' AND g.finalgrade!=0", ['forumid' => $forum->id]);
     {
         global $DB;
 
-        $itemnumber = (!empty($forum->grade_forum)) ? 1 : 0;
+        list($activesql, $activeparams) = $this->get_active_users_sql();
 
         $rows = $DB->get_records_sql("
             SELECT gg.id, gg.userid, gg.finalgrade AS grade, gg.timemodified, gg.usermodified,
@@ -359,7 +462,8 @@ AND gi.itemmodule = 'forum' AND g.finalgrade!=0", ['forumid' => $forum->id]);
              WHERE gi.itemmodule = 'forum'
                AND gi.itemtype   = 'mod'
                AND gi.iteminstance = :forumid
-               AND gi.itemnumber   = :itemnumber
+               AND gi.itemnumber  IN (0, 1)
+               AND gg.userid $activesql
                AND gg.finalgrade IS NOT NULL
                AND gg.finalgrade > 0
                AND gg.usermodified > 0
@@ -373,16 +477,20 @@ AND gi.itemmodule = 'forum' AND g.finalgrade!=0", ['forumid' => $forum->id]);
                      WHERE fd.forum = :forumid4 AND fd.userid = gg.userid
                )
           ORDER BY u.lastname, u.firstname
-        ", [
+        ", array_merge([
             'forumid'    => $forum->id,
             'forumid2'   => $forum->id,
             'forumid3'   => $forum->id,
             'forumid4'   => $forum->id,
-            'itemnumber' => $itemnumber,
-        ]);
+        ], $activeparams));
 
         $result = [];
+        $seen   = [];
         foreach ($rows as $row) {
+            if (isset($seen[$row->userid])) {
+                continue; // Same student already counted (graded on both items).
+            }
+            $seen[$row->userid] = true;
             $entry = new stdClass();
             $entry->student_name     = $row->firstname . ' ' . $row->lastname;
             $entry->student_idnumber = $row->idnumber;
@@ -415,15 +523,8 @@ AND gi.itemmodule = 'forum' AND g.finalgrade!=0", ['forumid' => $forum->id]);
         global $DB;
         $cm = get_coursemodule_from_instance($type, $module->id);
 
-        $grade_item = grade_item::fetch([
-            'courseid'     => $cm->course,
-            'iteminstance' => $cm->instance,
-            'itemmodule'   => $type,
-            'itemnumber'   => $this->get_forum_itemnumber($type, $module),
-        ]);
-
         $grades_info = [];
-        $grades = $grade_item->get_final();
+        $grades = $this->get_module_final_grades($type, $cm);
         foreach ($grades as $userid => $grade_data) {
             if ($grade_data->finalgrade) {
                 $info = new stdClass();
@@ -499,6 +600,8 @@ AND gi.itemmodule = 'forum' AND g.finalgrade!=0", ['forumid' => $forum->id]);
     {
         global $DB;
 
+        list($activesql, $activeparams) = $this->get_active_users_sql();
+
         $rows = $DB->get_records_sql("
             SELECT asub.id, asub.userid, asub.timemodified,
                    u.firstname, u.lastname, u.idnumber
@@ -509,11 +612,12 @@ AND gi.itemmodule = 'forum' AND g.finalgrade!=0", ['forumid' => $forum->id]);
                   AND ag.userid     = asub.userid
                   AND ag.grade >= 0
              WHERE asub.assignment = :assignid
+               AND asub.userid $activesql
                AND asub.status = 'submitted'
                AND asub.latest = 1
                AND ag.id IS NULL
              ORDER BY u.lastname, u.firstname
-        ", ['assignid' => $assign->id]);
+        ", array_merge(['assignid' => $assign->id], $activeparams));
 
         $result = [];
         foreach ($rows as $row) {
@@ -536,7 +640,7 @@ AND gi.itemmodule = 'forum' AND g.finalgrade!=0", ['forumid' => $forum->id]);
     {
         global $DB;
 
-        $itemnumber = (!empty($forum->grade_forum)) ? 1 : 0;
+        list($activesql, $activeparams) = $this->get_active_users_sql();
 
         $rows = $DB->get_records_sql("
             SELECT fd.userid,
@@ -546,23 +650,24 @@ AND gi.itemmodule = 'forum' AND g.finalgrade!=0", ['forumid' => $forum->id]);
                      WHERE fp2.discussion = fd.id AND fp2.parent = 0) AS time_created
               FROM {forum_discussions} fd
               JOIN {user} u ON u.id = fd.userid AND u.deleted = 0
-         LEFT JOIN {grade_items} gi
-                   ON gi.itemmodule  = 'forum'
-                  AND gi.iteminstance = :forumid2
-                  AND gi.itemnumber   = :itemnumber
-         LEFT JOIN {grade_grades} gg
-                   ON gg.itemid = gi.id
-                  AND gg.userid = fd.userid
-                  AND gg.finalgrade IS NOT NULL
-                  AND gg.finalgrade > 0
              WHERE fd.forum = :forumid
-               AND gg.id IS NULL
+               AND fd.userid $activesql
+               AND NOT EXISTS (
+                       SELECT 1
+                         FROM {grade_items} gi
+                         JOIN {grade_grades} gg ON gg.itemid = gi.id
+                        WHERE gi.itemmodule   = 'forum'
+                          AND gi.iteminstance = :forumid2
+                          AND gi.itemnumber  IN (0, 1)
+                          AND gg.userid       = fd.userid
+                          AND gg.finalgrade IS NOT NULL
+                          AND gg.finalgrade   > 0
+               )
              ORDER BY u.lastname, u.firstname
-        ", [
+        ", array_merge([
             'forumid'    => $forum->id,
             'forumid2'   => $forum->id,
-            'itemnumber' => $itemnumber,
-        ]);
+        ], $activeparams));
 
         $result = [];
         foreach ($rows as $row) {

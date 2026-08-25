@@ -676,7 +676,9 @@ function tool_tutor_follow_get_count_students($courseid)
         JOIN {role} r ON ra . roleid = r . id
         WHERE e . courseid = :courseid
             and ue . status = :status
+            and e . status = 0
             and u . deleted = 0
+            and u . suspended = 0
             and ctx . contextlevel = 50
             and r . archetype = :archetype";
 

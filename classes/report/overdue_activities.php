@@ -268,29 +268,38 @@ ORDER BY c.fullname, cs.section, f.name
             ]);
 
             $total_graded = $DB->count_records_sql("
-        SELECT COUNT(DISTINCT gg.userid)
-        FROM {grade_items} gi
-        JOIN {grade_grades} gg ON gg.itemid = gi.id
-        JOIN {user} u ON u.id = gg.userid
+        SELECT COUNT(DISTINCT p.userid)
+        FROM {forum_discussions} fd
+        JOIN {forum_posts} p ON p.discussion = fd.id AND p.parent = 0
+        JOIN {user} u ON u.id = p.userid
         JOIN {user_enrolments} ue ON ue.userid = u.id
         JOIN {enrol} e ON e.id = ue.enrolid AND e.courseid = :courseid
         JOIN {context} ctx ON ctx.instanceid = :courseid2 AND ctx.contextlevel = 50
         JOIN {role_assignments} ra ON ra.userid = u.id AND ra.contextid = ctx.id
         JOIN {role} r ON r.id = ra.roleid AND r.archetype = 'student'
-        WHERE gi.itemmodule = 'forum'
-          AND gi.iteminstance = :forumid
-          AND gi.courseid = :courseid3
-          AND gi.itemnumber = :itemnumber
+        WHERE fd.forum = :forumid
           AND u.deleted = 0
           AND u.suspended = 0
           AND ue.status = 0
           AND e.status = 0
+          AND EXISTS (
+                SELECT 1
+                  FROM {grade_items} gi
+                  JOIN {grade_grades} gg ON gg.itemid = gi.id
+                 WHERE gi.itemmodule   = 'forum'
+                   AND gi.iteminstance = :forumid2
+                   AND gi.courseid     = :courseid3
+                   AND gi.itemnumber  IN (0, 1)
+                   AND gg.userid       = p.userid
+                   AND gg.finalgrade IS NOT NULL
+                   AND gg.finalgrade   > 0
+          )
     ", [
                 'forumid'    => $forum->forumid,
+                'forumid2'   => $forum->forumid,
                 'courseid'   => $forum->courseid,
                 'courseid2'  => $forum->courseid,
                 'courseid3'  => $forum->courseid,
-                'itemnumber' => (!empty($forum->grade_forum)) ? 1 : 0,
             ]);
 
             $pending = $total_posts - $total_graded;
