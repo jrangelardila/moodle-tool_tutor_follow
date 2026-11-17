@@ -82,6 +82,7 @@ SELECT
     c.id                AS courseid,
     c.fullname          AS coursename,
     c.shortname,
+    c.category          AS course_categoryid,
     c.summary,
     cs.id               AS sectionid,
     cs.name             AS sectionname,
@@ -160,6 +161,7 @@ ORDER BY c.fullname, cs.section, a.name
             $class->coursename = $row->coursename;
             $class->summary = strip_tags($row->summary);
             $class->shortname = $row->shortname;
+            $class->category_course = tool_tutor_follow_get_category_path($row->course_categoryid);
             $class->section = $row->sectionname;
             $class->type = 'assign';
             $class->activity = $row->assignname;
@@ -202,6 +204,7 @@ SELECT
     c.id             AS courseid,
     c.fullname       AS coursename,
     c.shortname,
+    c.category       AS course_categoryid,
     c.summary,
     cs.id            AS sectionid,
     cs.name          AS sectionname,
@@ -277,6 +280,7 @@ ORDER BY c.fullname, cs.section, f.name
             $class->coursename = $forum->coursename;
             $class->summary = strip_tags($forum->summary);
             $class->shortname = $forum->shortname;
+            $class->category_course = tool_tutor_follow_get_category_path($forum->course_categoryid);
             $class->section = $forum->sectionname;
             $class->type = 'forum';
             $class->activity = $forum->forumname;
@@ -366,6 +370,7 @@ ORDER BY c.fullname, cs.section, f.name
             $group->lastname = $class->lastname;
             $group->coursename = $class->coursename;
             $group->shortname = $class->shortname;
+            $group->category_course = $class->category_course;
             $group->summary = $class->summary;
             $group->activities = [];
             $grouped[$key] = $group;
@@ -581,6 +586,7 @@ ORDER BY c.fullname, cs.section, f.name
             'lastname' => $group->lastname,
             'coursename' => $group->coursename,
             'shortname' => $group->shortname,
+            'category_course' => $group->category_course ?? '',
             'summary' => $group->summary,
             'count_activities' => count($group->activities),
             'blocks' => $blocks,
@@ -646,6 +652,7 @@ ORDER BY c.fullname, cs.section, f.name
             get_string('idnumber', 'moodle'),
             get_string('coursename', 'tool_tutor_follow'),
             get_string('course_shortname', 'tool_tutor_follow'),
+            get_string('course_category', 'tool_tutor_follow'),
             get_string('course_summary', 'tool_tutor_follow'),
             get_string('section', 'tool_tutor_follow'),
             get_string('type', 'tool_tutor_follow'),
@@ -684,6 +691,7 @@ ORDER BY c.fullname, cs.section, f.name
                             $row->idnumber,
                             $row->coursename,
                             $row->shortname,
+                            $row->category_course ?? '',
                             strip_tags($row->summary),
                             $row->section,
                             $row->type,

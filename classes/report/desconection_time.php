@@ -56,6 +56,7 @@ class desconection_time extends report_base
         u.lastname,
         c.fullname AS course_name,
         c.shortname AS course_shortname,
+        c.category AS course_categoryid,
         ula.timeaccess AS lastaccess,
         c.summary,
         :execute AS timeexecute
@@ -92,6 +93,7 @@ class desconection_time extends report_base
         if (!$records) return;
         $usercourses = [];
         foreach ($records as $record) {
+            $record->category_course = tool_tutor_follow_get_category_path($record->course_categoryid);
             $usercourses[$record->userid][] = $record;
         }
         $elements = [];
@@ -139,6 +141,7 @@ class desconection_time extends report_base
         $html .= '<thead><tr style="background-color: #f2f2f2;">';
         $html .= '<th style="border: 1px solid #ddd; padding: 8px;">' . get_string('coursename', 'tool_tutor_follow') . '</th>';
         $html .= '<th style="border: 1px solid #ddd; padding: 8px;">' . get_string('course_shortname', 'tool_tutor_follow') . '</th>';
+        $html .= '<th style="border: 1px solid #ddd; padding: 8px;">' . get_string('course_category', 'tool_tutor_follow') . '</th>';
         $html .= '<th style="border: 1px solid #ddd; padding: 8px;">' . get_string('days_without_access', 'tool_tutor_follow') . '</th>';
         $html .= '<th style="border: 1px solid #ddd; padding: 8px;">' . get_string('course_summary', 'tool_tutor_follow') . '</th>';
         $html .= '</tr></thead><tbody>';
@@ -148,6 +151,7 @@ class desconection_time extends report_base
             $html .= '<tr>';
             $html .= '<td style="border: 1px solid #ddd; padding: 8px;">' . $c->course_name . '</td>';
             $html .= '<td style="border: 1px solid #ddd; padding: 8px;">' . $c->course_shortname . '</td>';
+            $html .= '<td style="border: 1px solid #ddd; padding: 8px;">' . ($c->category_course ?? '') . '</td>';
             $html .= '<td style="border: 1px solid #ddd; padding: 8px;">' . $days . '</td>';
             $html .= '<td style="border: 1px solid #ddd; padding: 8px;">' . format_text($c->summary, FORMAT_HTML) . '</td>';
             $html .= '</tr>';
@@ -177,6 +181,7 @@ class desconection_time extends report_base
             get_string('idnumber', 'moodle'),
             get_string('coursename', 'tool_tutor_follow'),
             get_string('course_shortname', 'tool_tutor_follow'),
+            get_string('course_category', 'tool_tutor_follow'),
             get_string('course_summary', 'tool_tutor_follow'),
             get_string('lastaccess', 'moodle'),
             get_string('days_without_access', 'tool_tutor_follow'),
@@ -198,6 +203,7 @@ class desconection_time extends report_base
                 $row->useridnumber,
                 $row->course_name,
                 $row->course_shortname,
+                $row->category_course ?? '',
                 strip_tags($row->summary),
                 $date,
                 $days

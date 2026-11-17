@@ -50,6 +50,7 @@ class overdue_activities extends report_base
         global $DB;
 
         $days = time() - (get_config('tool_tutor_follow', 'days_limit_grading') * DAYSECS);
+        $nodatefilter = $this->grading_deadline_disabled();
 
         list($category_sql, $category_params) = $DB->get_in_or_equal($categories, SQL_PARAMS_NAMED, 'cat');
         list($role_sql, $role_params) = $DB->get_in_or_equal($roles, SQL_PARAMS_NAMED, 'rol');
@@ -61,8 +62,17 @@ class overdue_activities extends report_base
         $grouped = [];
 
         $params = array_merge($category_params, $role_params);
-        $params['daysago1'] = $days;
-        $params['daysago2'] = $days;
+
+        $assign_date_where = '';
+        if (!$nodatefilter) {
+            $assign_date_where = "
+  AND (
+        (a.cutoffdate > 0 AND a.cutoffdate <= :daysago1)
+     OR (a.cutoffdate = 0 AND a.duedate > 0 AND a.duedate <= :daysago2)
+  )";
+            $params['daysago1'] = $days;
+            $params['daysago2'] = $days;
+        }
 
         mtrace('Execute for assigns...');
 
@@ -74,6 +84,7 @@ SELECT
     c.id                AS courseid,
     c.fullname          AS coursename,
     c.shortname,
+    c.category          AS course_categoryid,
     c.summary,
     cs.id               AS sectionid,
     cs.name             AS sectionname,
@@ -101,10 +112,7 @@ WHERE c.category $category_sql
   AND r.shortname $role_sql
   AND tutor.deleted = 0
   AND tutor.suspended = 0
-  AND (
-        (a.cutoffdate > 0 AND a.cutoffdate <= :daysago1)
-     OR (a.cutoffdate = 0 AND a.duedate > 0 AND a.duedate <= :daysago2)
-  )
+  {$assign_date_where}
   AND EXISTS (
         SELECT 1
         FROM {user_enrolments} ue
@@ -139,13 +147,11 @@ ORDER BY c.fullname, cs.section, a.name
                 'courseid' => $row->courseid,
             ]);
 
+            // Calificada por el módulo o por el libro de calificaciones: poner la
+            // nota en la libreta no escribe en assign_grades, sólo en grade_grades.
             $graded = $DB->count_records_sql("
         SELECT COUNT(DISTINCT s.id)
         FROM {assign_submission} s
-        JOIN {assign_grades} g 
-             ON g.assignment = s.assignment
-            AND g.userid = s.userid
-            AND g.attemptnumber = s.attemptnumber
         JOIN {user} u ON u.id = s.userid
         JOIN {user_enrolments} ue ON ue.userid = u.id
         JOIN {enrol} e ON e.id = ue.enrolid AND e.courseid = :courseid
@@ -156,9 +162,33 @@ ORDER BY c.fullname, cs.section, a.name
           AND u.suspended = 0
           AND ue.status = 0
           AND e.status = 0
+          AND (
+                EXISTS (
+                    SELECT 1
+                      FROM {assign_grades} g
+                     WHERE g.assignment = s.assignment
+                       AND g.userid = s.userid
+                       AND g.attemptnumber = s.attemptnumber
+                       AND g.grade >= 0
+                )
+             OR EXISTS (
+                    SELECT 1
+                      FROM {grade_items} gi
+                      JOIN {grade_grades} gg ON gg.itemid = gi.id
+                     WHERE gi.itemmodule   = 'assign'
+                       AND gi.itemtype     = 'mod'
+                       AND gi.iteminstance = :assignid2
+                       AND gi.courseid     = :courseid2
+                       AND gi.itemnumber   = 0
+                       AND gg.userid       = s.userid
+                       AND gg.finalgrade IS NOT NULL
+                )
+          )
     ", [
                 'assignid' => $row->assignid,
                 'courseid' => $row->courseid,
+                'assignid2' => $row->assignid,
+                'courseid2' => $row->courseid,
             ]);
 
             if ($submitted <= $graded) {
@@ -177,6 +207,7 @@ ORDER BY c.fullname, cs.section, a.name
             $class->coursename = $row->coursename;
             $class->summary = strip_tags($row->summary);
             $class->shortname = $row->shortname;
+            $class->category_course = tool_tutor_follow_get_category_path($row->course_categoryid);
             $class->section = $row->sectionname;
             $class->type = 'assign';
             $class->activity = $row->assignname;
@@ -193,7 +224,14 @@ ORDER BY c.fullname, cs.section, a.name
         mtrace('Execute for forums (simplified version)...');
 
         $params = array_merge($category_params, $role_params);
-        $params['daysago'] = $days;
+
+        $forum_date_where = '';
+        if (!$nodatefilter) {
+            $forum_date_where = "
+  AND f.duedate > 0
+  AND f.duedate <= :daysago";
+            $params['daysago'] = $days;
+        }
 
         $sql = "
 SELECT
@@ -205,6 +243,7 @@ SELECT
     c.id             AS courseid,
     c.fullname       AS coursename,
     c.shortname,
+    c.category       AS course_categoryid,
     c.summary,
     cs.id            AS sectionid,
     cs.name          AS sectionname,
@@ -228,9 +267,8 @@ WHERE c.category $category_sql
   AND r.shortname $role_sql
   AND tutor.deleted = 0
   AND tutor.suspended = 0
-  AND f.assessed > 0
-  AND f.duedate > 0
-  AND f.duedate <= :daysago
+  AND (f.assessed > 0 OR f.grade_forum != 0)
+  {$forum_date_where}
   AND EXISTS (
         SELECT 1
         FROM {user_enrolments} ue
@@ -292,7 +330,6 @@ ORDER BY c.fullname, cs.section, f.name
                    AND gi.itemnumber  IN (0, 1)
                    AND gg.userid       = p.userid
                    AND gg.finalgrade IS NOT NULL
-                   AND gg.finalgrade   > 0
           )
     ", [
                 'forumid'    => $forum->forumid,
@@ -324,6 +361,7 @@ ORDER BY c.fullname, cs.section, f.name
             $class->coursename = $forum->coursename;
             $class->summary = strip_tags($forum->summary);
             $class->shortname = $forum->shortname;
+            $class->category_course = tool_tutor_follow_get_category_path($forum->course_categoryid);
             $class->section = $forum->sectionname;
             $class->type = 'forum';
             $class->activity = $forum->forumname;
@@ -385,6 +423,7 @@ ORDER BY c.fullname, cs.section, f.name
             $group->tutorid = $tutorid;
             $group->coursename = $class->coursename;
             $group->shortname = $class->shortname;
+            $group->category_course = $class->category_course;
             $group->summary = $class->summary;
             $group->activities = [];
             $grouped[$key] = $group;
@@ -422,7 +461,9 @@ ORDER BY c.fullname, cs.section, f.name
             . '</tr></thead><tbody>' . $rows . '</tbody></table>';
 
         return '<strong>' . get_string('desc_course', 'tool_tutor_follow') . ':</strong> '
-            . $group->coursename . ' (' . $group->shortname . ')<br><br>' . $table;
+            . $group->coursename . ' (' . $group->shortname . ')<br>'
+            . '<strong>' . get_string('course_category', 'tool_tutor_follow') . ':</strong> '
+            . ($group->category_course ?? '') . '<br><br>' . $table;
     }
 
     /**
@@ -445,6 +486,7 @@ ORDER BY c.fullname, cs.section, f.name
             get_string('idnumber', 'moodle'),
             get_string('coursename', 'tool_tutor_follow'),
             get_string('course_shortname', 'tool_tutor_follow'),
+            get_string('course_category', 'tool_tutor_follow'),
             get_string('course_summary', 'tool_tutor_follow'),
             get_string('type', 'tool_tutor_follow'),
             get_string('nameactivity', 'tool_tutor_follow'),
@@ -462,6 +504,7 @@ ORDER BY c.fullname, cs.section, f.name
                 $row->idnumber,
                 $row->coursename,
                 $row->shortname,
+                $row->category_course ?? '',
                 strip_tags($row->summary),
                 $row->type,
                 $row->activity,

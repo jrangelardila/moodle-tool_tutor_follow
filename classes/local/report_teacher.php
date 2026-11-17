@@ -40,7 +40,7 @@ class report_teacher extends dynamic_form
     /**
      * @var mixed|string
      */
-    public mixed $type;
+    public mixed $type = self::TYPES['created'];
 
     /**
      * Types de forms
@@ -50,7 +50,7 @@ class report_teacher extends dynamic_form
         'edit' => 2,
         'delete' => 3,
     ];
-    public array $statusoptions;
+    public array $statusoptions = [];
     //Elements for the db table
     private $id;
     private $status;
@@ -63,19 +63,26 @@ class report_teacher extends dynamic_form
     private $lasupdated;
 
     /**
+     * Opciones del desplegable de estado.
+     *
+     * Antes se armaban en un __construct() propio, pero Moodle 5.2 declaro
+     * core_form\dynamic_form::__construct() como final: sobrescribirlo hacia que la clase
+     * ni siquiera se pudiera cargar ("Cannot override final method"). El constructor del
+     * padre llama a definition(), asi que inicializarlas ahi cubre lo mismo.
+     *
+     * El noveno parametro $type que tenia aquel constructor tampoco hacia falta: el
+     * formulario se abre siempre como ModalForm desde JS, con los ocho argumentos
+     * estandar, y definition() ya lee el tipo de optional_param('type').
+     *
+     * @return void
      * @throws \coding_exception
      */
-    public function __construct(?string $action = null, ?array $customdata = null, string $method = 'post', string $target = '', ?array $attributes = [], bool $editable = true, ?array $ajaxformdata = null, bool $isajaxsubmission = false,
-                                        $type = self::TYPES['created'])
-    {
-        $this->type = $type;
-
+    protected function cargar_opciones_de_estado(): void {
         $this->statusoptions = [
             0 => get_string('status_report_inprocess', 'tool_tutor_follow'),
             1 => get_string('status_report_sended', 'tool_tutor_follow'),
-            2 => get_string('status_report_complete', 'tool_tutor_follow')
+            2 => get_string('status_report_complete', 'tool_tutor_follow'),
         ];
-        parent::__construct($action, $customdata, $method, $target, $attributes, $editable, $ajaxformdata, $isajaxsubmission);
     }
 
     /**
@@ -170,6 +177,7 @@ class report_teacher extends dynamic_form
     {
         global $DB;
         $mform = $this->_form;
+        $this->cargar_opciones_de_estado();
         //Modifiy the type, when the petition is origin in js
         if ($this->optional_param('type', 'created', PARAM_TEXT)) {
             $this->type = self::TYPES[$this->optional_param('type', 'created', PARAM_TEXT)];

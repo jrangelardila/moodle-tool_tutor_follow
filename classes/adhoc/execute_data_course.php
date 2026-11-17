@@ -212,7 +212,6 @@ class execute_data_course extends adhoc_task
                AND gi.iteminstance = :forumid
                AND gi.itemnumber  IN (0, 1)
                AND gg.finalgrade IS NOT NULL
-               AND gg.finalgrade   > 0
                AND gg.userid $activesql",
             array_merge(['forumid' => $forum->id], $activeparams));
 
@@ -233,7 +232,6 @@ class execute_data_course extends adhoc_task
                           AND gi.itemnumber  IN (0, 1)
                           AND gg.userid       = fd.userid
                           AND gg.finalgrade IS NOT NULL
-                          AND gg.finalgrade   > 0
                    )
             ) t", array_merge(['forumid' => $forum->id, 'forumid2' => $forum->id], $activeparams));
 
@@ -294,7 +292,8 @@ class execute_data_course extends adhoc_task
                 continue;
             }
             foreach ($grade_item->get_final() as $userid => $grade_data) {
-                if (empty($grade_data->finalgrade) || !isset($active[$userid])) {
+                // is_null y no empty(): una nota de 0 es una nota.
+                if (is_null($grade_data->finalgrade) || !isset($active[$userid])) {
                     continue;
                 }
                 if (!isset($merged[$userid]) || $grade_data->finalgrade > $merged[$userid]->finalgrade) {
@@ -312,7 +311,7 @@ class execute_data_course extends adhoc_task
         $grades = $this->get_module_final_grades($type, $cm);
         $statistics = [];
         foreach ($grades as $userid => $grade_data) {
-            if ($grade_data->finalgrade) {
+            if (!is_null($grade_data->finalgrade)) {
                 $finalgrade = round($grade_data->finalgrade, 1);
                 $finalgrade = (string)$finalgrade;
                 if (isset($statistics[$finalgrade])) {
@@ -358,10 +357,38 @@ class execute_data_course extends adhoc_task
 
         $this->total_assignments += $assign->total_submissions;
 
-        $assign->graded_submissions = $DB->count_records_select('assign_grades',
-            "assignment = :assignment AND grade >= 0 AND userid $activesql",
-            array_merge(['assignment' => $assign->id], $activeparams)
-        );
+        $assign->graded_submissions = $DB->count_records_sql("
+            SELECT COUNT(*)
+              FROM {assign_submission} asub
+             WHERE asub.assignment = :assignid
+               AND asub.status = 'submitted'
+               AND asub.userid $activesql
+               AND (
+                     EXISTS (
+                         SELECT 1
+                           FROM {assign_grades} ag
+                          WHERE ag.assignment = asub.assignment
+                            AND ag.userid = asub.userid
+                            AND ag.grade >= 0
+                     )
+                  OR EXISTS (
+                         SELECT 1
+                           FROM {grade_items} gi
+                           JOIN {grade_grades} gg ON gg.itemid = gi.id
+                          WHERE gi.itemmodule   = 'assign'
+                            AND gi.itemtype     = 'mod'
+                            AND gi.iteminstance = :assignid2
+                            AND gi.courseid     = :courseid
+                            AND gi.itemnumber   = 0
+                            AND gg.userid       = asub.userid
+                            AND gg.finalgrade IS NOT NULL
+                     )
+               )
+        ", array_merge([
+            'assignid'  => $assign->id,
+            'assignid2' => $assign->id,
+            'courseid'  => $assign->course,
+        ], $activeparams));
 
         $assign->pending_grades = $assign->total_submissions - $assign->graded_submissions;
 
@@ -465,7 +492,6 @@ class execute_data_course extends adhoc_task
                AND gi.itemnumber  IN (0, 1)
                AND gg.userid $activesql
                AND gg.finalgrade IS NOT NULL
-               AND gg.finalgrade > 0
                AND gg.usermodified > 0
                AND EXISTS (
                      SELECT 1 FROM {forum_discussions} fd
@@ -526,7 +552,7 @@ class execute_data_course extends adhoc_task
         $grades_info = [];
         $grades = $this->get_module_final_grades($type, $cm);
         foreach ($grades as $userid => $grade_data) {
-            if ($grade_data->finalgrade) {
+            if (!is_null($grade_data->finalgrade)) {
                 $info = new stdClass();
 
                 $user = $DB->get_record('user', ['id' => $userid]);
@@ -616,8 +642,26 @@ class execute_data_course extends adhoc_task
                AND asub.status = 'submitted'
                AND asub.latest = 1
                AND ag.id IS NULL
+               -- Calificar desde el libro de calificaciones no escribe en
+               -- assign_grades: deja la nota en grade_grades (con overridden).
+               AND NOT EXISTS (
+                       SELECT 1
+                         FROM {grade_items} gi
+                         JOIN {grade_grades} gg ON gg.itemid = gi.id
+                        WHERE gi.itemmodule   = 'assign'
+                          AND gi.itemtype     = 'mod'
+                          AND gi.iteminstance = :assignid2
+                          AND gi.courseid     = :courseid
+                          AND gi.itemnumber   = 0
+                          AND gg.userid       = asub.userid
+                          AND gg.finalgrade IS NOT NULL
+               )
              ORDER BY u.lastname, u.firstname
-        ", array_merge(['assignid' => $assign->id], $activeparams));
+        ", array_merge([
+            'assignid'  => $assign->id,
+            'assignid2' => $assign->id,
+            'courseid'  => $assign->course,
+        ], $activeparams));
 
         $result = [];
         foreach ($rows as $row) {
@@ -661,7 +705,6 @@ class execute_data_course extends adhoc_task
                           AND gi.itemnumber  IN (0, 1)
                           AND gg.userid       = fd.userid
                           AND gg.finalgrade IS NOT NULL
-                          AND gg.finalgrade   > 0
                )
              ORDER BY u.lastname, u.firstname
         ", array_merge([

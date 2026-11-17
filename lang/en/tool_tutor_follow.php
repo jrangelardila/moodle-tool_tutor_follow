@@ -246,7 +246,7 @@ $string['table_header_teacher'] = 'Teacher';
 $string['report_grades_distribution'] = 'Grade Distribution Report';
 $string['report_grades_distribution_desc'] = 'Generates a report showing how teachers distributed their grades across activities, to identify whether grading was consistent or uniform.';
 $string['title_report_grades_distribution'] = 'Teacher grade distribution';
-$string['grades_distribution_course_desc'] = 'The teacher <strong>{$a->firstname} {$a->lastname}</strong> has <strong>{$a->count_activities}</strong> activity(ies) in the course <strong>{$a->coursename} ({$a->shortname})</strong> where grade concentration exceeded the configured threshold.<br>
+$string['grades_distribution_course_desc'] = 'The teacher <strong>{$a->firstname} {$a->lastname}</strong> has <strong>{$a->count_activities}</strong> activity(ies) in the course <strong>{$a->coursename} ({$a->shortname})</strong>, category <strong>{$a->category_course}</strong>, where grade concentration exceeded the configured threshold.<br>
 <strong>Group/Summary:</strong> {$a->summary}<br><br>
 <strong>Flagged activities:</strong><br>{$a->blocks}';
 $string['grades_distribution_grade'] = 'Grade';
@@ -278,3 +278,6 @@ $string['regenerate_desc'] = 'Deletes every stored report and runs the enabled r
 $string['regenerate_button'] = 'Delete and regenerate reports';
 $string['regenerate_confirm'] = 'Delete the {$a} stored reports and generate them again? Reports already sent by email will be deleted as well. This action cannot be undone.';
 $string['regenerate_success'] = 'Information refreshed: {$a->deleted} report(s) deleted, {$a->executed} report(s) executed, {$a->created} report(s) generated.';
+
+$string['course_category'] = 'Course category';
+$string['error_class_not_found'] = 'Report class not found: {$a}';

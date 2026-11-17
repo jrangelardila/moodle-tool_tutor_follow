@@ -50,6 +50,22 @@ class report_base
     public function __construct() {}
 
     /**
+     * Indica si debe omitirse el filtro de fecha de vencimiento.
+     *
+     * Un valor negativo en days_limit_grading significa "todos los pendientes":
+     * se desactiva la ventana de vencidas y entran también las actividades sin
+     * fecha de entrega, igual que hacen el bloque y las tareas adhoc. Con
+     * valores positivos se mantiene el comportamiento de siempre.
+     *
+     * @return bool
+     * @throws \dml_exception
+     */
+    protected function grading_deadline_disabled(): bool
+    {
+        return (int)get_config('tool_tutor_follow', 'days_limit_grading') < 0;
+    }
+
+    /**
      * Get the report name.
      *
      * @return string

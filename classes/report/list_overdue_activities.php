@@ -127,8 +127,19 @@ class list_overdue_activities extends report_base
         $params['now'] = $days;
         $params['nowend'] = $days;
 
+        $date_where = '';
+        if (!$this->grading_deadline_disabled()) {
+            $date_where = "
+                AND (
+                    (a.cutoffdate > 0 AND a.cutoffdate <= :now)
+                    OR (a.cutoffdate = 0 AND a.duedate > 0 AND a.duedate <= :nowend)
+                )";
+        } else {
+            unset($params['now'], $params['nowend']);
+        }
+
         $sql = "
-            SELECT 
+            SELECT
                 s.id AS submission_id,
                 s.userid AS student_userid,
                 s.timecreated AS submission_date,
@@ -142,6 +153,7 @@ class list_overdue_activities extends report_base
                 c.id AS course_id,
                 c.fullname AS course_name,
                 c.shortname AS course_shortname,
+                c.category AS course_categoryid,
                 c.summary AS course_summary,
                 
                 cm.id AS module_id,
@@ -184,20 +196,32 @@ class list_overdue_activities extends report_base
                 AND ue.userid = u.id 
                 AND ue.status = 0
             
-            LEFT JOIN {assign_grades} g 
-                ON g.assignment = a.id 
-                AND g.userid = s.userid 
+            LEFT JOIN {assign_grades} g
+                ON g.assignment = a.id
+                AND g.userid = s.userid
                 AND g.attemptnumber = s.attemptnumber
-            
+                AND g.grade >= 0
+
             WHERE c.category {$category_sql}
                 AND s.status = 'submitted'
                 AND s.latest = 1
                 AND g.id IS NULL
-                AND (
-                    (a.cutoffdate > 0 AND a.cutoffdate <= :now)
-                    OR (a.cutoffdate = 0 AND a.duedate > 0 AND a.duedate <= :nowend)
+                -- Calificar desde el libro de calificaciones no escribe en
+                -- assign_grades: deja la nota en grade_grades (con overridden).
+                AND NOT EXISTS (
+                        SELECT 1
+                          FROM {grade_items} gi
+                          JOIN {grade_grades} gg ON gg.itemid = gi.id
+                         WHERE gi.itemmodule   = 'assign'
+                           AND gi.itemtype     = 'mod'
+                           AND gi.iteminstance = a.id
+                           AND gi.courseid     = c.id
+                           AND gi.itemnumber   = 0
+                           AND gg.userid       = s.userid
+                           AND gg.finalgrade IS NOT NULL
                 )
-            
+                {$date_where}
+
             ORDER BY c.fullname, cs.section, a.name, u.lastname, u.firstname
         ";
 
@@ -232,6 +256,7 @@ class list_overdue_activities extends report_base
                     'teacher_lastname' => $row->teacher_lastname,
                     'course' => $row->course_name,
                     'shortname' => $row->course_shortname,
+                    'category_course' => tool_tutor_follow_get_category_path($row->course_categoryid),
                     'summary' => strip_tags($row->course_summary),
                     'activities' => []
                 ];
@@ -286,6 +311,7 @@ class list_overdue_activities extends report_base
         $class->coursename = $row->course_name;
         $class->summary = strip_tags($row->course_summary);
         $class->shortname = $row->course_shortname;
+        $class->category_course = tool_tutor_follow_get_category_path($row->course_categoryid);
         $class->section = $row->section_name;
 
         $class->type = 'assign';
@@ -383,10 +409,17 @@ class list_overdue_activities extends report_base
         global $DB;
 
         $params = $category_params;
-        $params['daysago'] = $days;
+
+        $date_where = '';
+        if (!$this->grading_deadline_disabled()) {
+            $date_where = "
+                AND f.duedate > 0
+                AND f.duedate <= :daysago";
+            $params['daysago'] = $days;
+        }
 
         $sql = "
-            SELECT 
+            SELECT
                 f.id AS forum_id,
                 f.name AS forum_name,
                 f.duedate AS limitdate,
@@ -396,6 +429,7 @@ class list_overdue_activities extends report_base
                 c.id AS course_id,
                 c.fullname AS course_name,
                 c.shortname AS course_shortname,
+                c.category AS course_categoryid,
                 c.summary AS course_summary,
                 
                 cm.id AS module_id,
@@ -418,10 +452,9 @@ class list_overdue_activities extends report_base
             JOIN {course_sections} cs ON cs.id = cm.section
             
             WHERE c.category {$category_sql}
-                AND f.assessed > 0
-                AND f.duedate > 0
-                AND f.duedate <= :daysago
-            
+                AND (f.assessed > 0 OR f.grade_forum != 0)
+                {$date_where}
+
             ORDER BY c.fullname, cs.section, f.name
         ";
 
@@ -530,7 +563,6 @@ class list_overdue_activities extends report_base
                      AND gi.itemnumber  IN (0, 1)
                      AND gg.userid       = u.id
                      AND gg.finalgrade IS NOT NULL
-                     AND gg.finalgrade   > 0
               )
             ORDER BY fd.forum, u.lastname, u.firstname
         ";
@@ -585,6 +617,7 @@ class list_overdue_activities extends report_base
                 $combined_row->course_id = $forum_data->course_id;
                 $combined_row->course_name = $forum_data->course_name;
                 $combined_row->course_shortname = $forum_data->course_shortname;
+                $combined_row->course_categoryid = $forum_data->course_categoryid;
                 $combined_row->course_summary = $forum_data->course_summary;
                 $combined_row->section_name = $forum_data->section_name;
 
@@ -633,6 +666,7 @@ class list_overdue_activities extends report_base
                     'teacher_lastname' => $row->teacher_lastname,
                     'course' => $row->course_name,
                     'shortname' => $row->course_shortname,
+                    'category_course' => tool_tutor_follow_get_category_path($row->course_categoryid),
                     'summary' => strip_tags($row->course_summary),
                     'activities' => []
                 ];
@@ -687,6 +721,7 @@ class list_overdue_activities extends report_base
         $class->coursename = $row->course_name;
         $class->summary = strip_tags($row->course_summary);
         $class->shortname = $row->course_shortname;
+        $class->category_course = tool_tutor_follow_get_category_path($row->course_categoryid);
         $class->section = $row->section_name;
 
         $class->type = 'forum';
@@ -922,7 +957,9 @@ class list_overdue_activities extends report_base
         }
 
         return '<strong>' . get_string('desc_course', 'tool_tutor_follow') . ':</strong> ' .
-            $course_data['course'] . ' (' . $course_data['shortname'] . ')<br><br>' . $blocks;
+            $course_data['course'] . ' (' . $course_data['shortname'] . ')<br>' .
+            '<strong>' . get_string('course_category', 'tool_tutor_follow') . ':</strong> ' .
+            ($course_data['category_course'] ?? '') . '<br><br>' . $blocks;
     }
 
     /**
@@ -984,6 +1021,7 @@ class list_overdue_activities extends report_base
             get_string('student_idnumber', 'tool_tutor_follow'),
             get_string('coursename', 'tool_tutor_follow'),
             get_string('course_shortname', 'tool_tutor_follow'),
+            get_string('course_category', 'tool_tutor_follow'),
             get_string('course_summary', 'tool_tutor_follow'),
             get_string('section', 'tool_tutor_follow'),
             get_string('type', 'tool_tutor_follow'),
@@ -1006,6 +1044,7 @@ class list_overdue_activities extends report_base
                 $row->student_idnumber,
                 $row->coursename,
                 $row->shortname,
+                $row->category_course ?? '',
                 strip_tags($row->summary),
                 $row->section,
                 $row->type,

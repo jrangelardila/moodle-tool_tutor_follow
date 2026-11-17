@@ -30,7 +30,39 @@ use tool_tutor_follow\local\report_teacher;
 use tool_tutor_follow\task\data_user_tutor;
 
 /**
+ * Ruta completa de una categoría, no sólo su último tramo.
+ *
+ * Devuelve por ejemplo "2025-1/SEGUNDO MOMENTO" en vez de "SEGUNDO MOMENTO",
+ * que es lo que se necesita para distinguir categorías con el mismo nombre
+ * colgando de padres distintos. Se cachea en memoria porque los reportes
+ * recorren muchas filas del mismo curso.
+ *
+ * @param int|string|null $categoryid
+ * @return string Ruta separada por '/', o cadena vacía si no se resuelve.
+ */
+function tool_tutor_follow_get_category_path($categoryid): string
+{
+    static $cache = [];
+
+    $categoryid = (int)$categoryid;
+    if ($categoryid <= 0) {
+        return '';
+    }
+
+    if (!isset($cache[$categoryid])) {
+        $category = core_course_category::get($categoryid, IGNORE_MISSING, true);
+        $cache[$categoryid] = $category ? $category->get_nested_name(false, '/') : '';
+    }
+
+    return $cache[$categoryid];
+}
+
+/**
  * Descarta la traza de los reportes.
+ *
+ * Los reportes llaman a mtrace() para el log del cron. En una petición web
+ * mtrace() hace echo directo, así que sin esto la página se llenaría de
+ * cientos de líneas de traza antes de la redirección.
  *
  * @param string $string
  * @param string $eol
@@ -43,6 +75,11 @@ function tool_tutor_follow_mtrace_discard($string, $eol = "\n")
 /**
  * Vacía la tabla de reportes y vuelve a ejecutar los reportes habilitados.
  *
+ * Es la misma ejecución que hace la tarea programada, pero a demanda y
+ * precedida de un borrado, para renovar la información sin esperar al cron.
+ *
+ * @return stdClass Con deleted (filas borradas), executed (reportes ejecutados)
+ *                  y created (filas generadas).
  * @throws dml_exception
  */
 function tool_tutor_follow_regenerate_reports(): stdClass
@@ -62,6 +99,7 @@ function tool_tutor_follow_regenerate_reports(): stdClass
     $roles = json_decode(get_config('tool_tutor_follow', 'roles'));
     $reports = json_decode(get_config('tool_tutor_follow', 'reports_enable'));
 
+    // En web se silencia la traza; por CLI se deja pasar para poder depurar.
     $previouswrapper = $CFG->mtrace_wrapper ?? null;
     if (!CLI_SCRIPT) {
         $CFG->mtrace_wrapper = 'tool_tutor_follow_mtrace_discard';

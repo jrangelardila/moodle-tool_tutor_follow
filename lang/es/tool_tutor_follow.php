@@ -246,7 +246,7 @@ $string['table_header_teacher'] = 'Docente';
 $string['report_grades_distribution'] = 'Reporte de distribución de calificaciones';
 $string['report_grades_distribution_desc'] = 'Genera un reporte que muestra cómo cada docente distribuyó las calificaciones en sus actividades, para identificar si calificó de forma ordenada o uniforme.';
 $string['title_report_grades_distribution'] = 'Distribución de calificaciones del docente';
-$string['grades_distribution_course_desc'] = 'El docente <strong>{$a->firstname} {$a->lastname}</strong> tiene <strong>{$a->count_activities}</strong> actividad(es) en el curso <strong>{$a->coursename} ({$a->shortname})</strong> donde la concentración de calificaciones superó el umbral configurado.<br>
+$string['grades_distribution_course_desc'] = 'El docente <strong>{$a->firstname} {$a->lastname}</strong> tiene <strong>{$a->count_activities}</strong> actividad(es) en el curso <strong>{$a->coursename} ({$a->shortname})</strong>, categoría <strong>{$a->category_course}</strong>, donde la concentración de calificaciones superó el umbral configurado.<br>
 <strong>Grupo/Resumen:</strong> {$a->summary}<br><br>
 <strong>Actividades reportadas:</strong><br>{$a->blocks}';
 $string['grades_distribution_grade'] = 'Calificación';
@@ -278,3 +278,6 @@ $string['regenerate_desc'] = 'Borra todos los reportes almacenados y vuelve a ej
 $string['regenerate_button'] = 'Borrar y regenerar reportes';
 $string['regenerate_confirm'] = '¿Borrar los {$a} reportes almacenados y volver a generarlos? Se eliminarán también los que ya fueron enviados por correo. Esta acción no se puede deshacer.';
 $string['regenerate_success'] = 'Información renovada: {$a->deleted} reporte(s) borrado(s), {$a->executed} reporte(s) ejecutado(s), {$a->created} reporte(s) generado(s).';
+
+$string['course_category'] = 'Categoría del curso';
+$string['error_class_not_found'] = 'No se encontró la clase del informe: {$a}';

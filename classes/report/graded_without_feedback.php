@@ -103,6 +103,7 @@ class graded_without_feedback extends report_base
                 c.id AS course_id,
                 c.fullname AS course_name,
                 c.shortname AS course_shortname,
+                c.category AS course_categoryid,
                 c.summary AS course_summary,
 
                 cm.id AS module_id,
@@ -200,6 +201,7 @@ class graded_without_feedback extends report_base
                 c.id AS course_id,
                 c.fullname AS course_name,
                 c.shortname AS course_shortname,
+                c.category AS course_categoryid,
                 c.summary AS course_summary,
 
                 cm.id AS module_id,
@@ -238,7 +240,6 @@ class graded_without_feedback extends report_base
 
             WHERE c.category {$category_sql}
               AND gg.finalgrade IS NOT NULL
-              AND gg.finalgrade > 0
               AND gg.usermodified > 0
               AND EXISTS (
                     SELECT 1
@@ -326,6 +327,7 @@ class graded_without_feedback extends report_base
         $entry->course_id = $row->course_id;
         $entry->coursename = $row->course_name;
         $entry->shortname = $row->course_shortname;
+        $entry->category_course = tool_tutor_follow_get_category_path($row->course_categoryid);
         $entry->summary = strip_tags((string)$row->course_summary);
 
         $entry->activity = $row->activity_name;
@@ -379,6 +381,7 @@ class graded_without_feedback extends report_base
                 'course_id'        => $row->course_id,
                 'course_name'      => $row->course_name,
                 'course_shortname' => $row->course_shortname,
+                'category_course'  => tool_tutor_follow_get_category_path($row->course_categoryid),
                 'course_summary'   => strip_tags((string)$row->course_summary),
                 'first_teacher_id' => $row->teacher_userid,
                 'rows'             => [],
@@ -431,6 +434,8 @@ class graded_without_feedback extends report_base
     {
         return '<strong>' . get_string('desc_course', 'tool_tutor_follow') . ':</strong> ' .
             $course['course_name'] . ' (' . $course['course_shortname'] . ')<br>' .
+            '<strong>' . get_string('course_category', 'tool_tutor_follow') . ':</strong> ' .
+            ($course['category_course'] ?? '') . '<br>' .
             '<strong>' . get_string('desc_pending_feedback', 'tool_tutor_follow') . ':</strong><br>' .
             $table_html;
     }
@@ -487,6 +492,7 @@ class graded_without_feedback extends report_base
         $columns = [
             get_string('coursename', 'tool_tutor_follow'),
             get_string('course_shortname', 'tool_tutor_follow'),
+            get_string('course_category', 'tool_tutor_follow'),
             get_string('type', 'tool_tutor_follow'),
             get_string('nameactivity', 'tool_tutor_follow'),
             get_string('student_firstname', 'tool_tutor_follow'),
@@ -507,6 +513,7 @@ class graded_without_feedback extends report_base
             $exportdata[] = [
                 $row->coursename,
                 $row->shortname,
+                $row->category_course ?? '',
                 $row->type,
                 $row->activity,
                 $row->student_firstname,
